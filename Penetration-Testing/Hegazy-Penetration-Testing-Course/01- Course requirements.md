@@ -1,0 +1,18 @@
+### Browser Plugins
+- Wappalyzer
+- Flag fox
+- Foxy Proxy
+- Tamper data
+- SEO status PageRank/Alexa
+
+### Tools
+- VirtualBox or VMware
+- [Ubuntu](https://ubuntu.com/) or [Kali Linux](https://www.kali.org/) or [Parrot Security OS](https://parrotsec.org/).  
+	Kali Linux and Parrot Security OS are Linux distributions that was made for security researchers.  
+	All of the three distributions are considered as Debian-based distributions.
+- Java & Burp suite
+
+
+<hr style="border: 1px solid #ccc;" />
+
+### Follow us on [Telegram](https://t.me/yanfa3/29) for more resources. 
