@@ -6,7 +6,7 @@
   * [Resources](<00. Intro/Resources.md>)
 * [01. Web Penetration Testing](01.-web-penetration-testing/README.md)
   * [01. Ebrahim Hegazy](01.-web-penetration-testing/01.-ebrahim-hegazy/README.md)
-    * [Hegazy-Penetration-Testing-Course](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/README.md>)
+    * [Web Application Penetration Testing Course](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/README.md>)
       * [01. Course Requirements](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/01. Course Requirements.md>)
       * [02. Databases and leaks](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/02. Databases and leaks.md>)
       * [03. Linux](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/03. Linux.md>)
