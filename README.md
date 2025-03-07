@@ -1,11 +1,7 @@
-# KnowledgeNuggets
+### **Welcome to KnowledgeNuggets!** 
 
-### 👤 **Abdelrahman Zaki**
+I'm **Abdelrahman Zaki**, an **Associate Information Security Consultant at ZINAD IT**.
 
-**Associate Information Security Consultant @ ZINAD IT**
+This is a collection of **concise summaries** on technical topics and courses, designed for **quick learning and easy reference**.
 
-Cybersecurity practitioner with expertise in **penetration testing, vulnerability assessment, secure code review, and application security**.
-
-Identified critical vulnerabilities on **HackerOne** and remains dedicated to strengthening security practices. Always eager to **learn, explore, and enhance system security**.
-
-📚 **KnowledgeNuggets** – Bite-sized summaries of **technical topics and courses**, designed for **quick learning and easy reference**. 🚀
+A cybersecurity practitioner specializing in **penetration testing, vulnerability assessment, secure code review, and application security**.
