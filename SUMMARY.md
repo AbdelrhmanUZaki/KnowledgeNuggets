@@ -22,6 +22,6 @@
       * [BurpSuite Guide](<01. Web Penetration Testing/01. Ebrahim Hegazy/Web Application Penetration Testing/13. BurpSuite.md>)
   * [02. TCM Security](01.-web-penetration-testing/02.-tcm-security/README.md)
     * [01. Practical Web Application Security and Testing](01.-web-penetration-testing/02.-tcm-security/01.-practical-web-application-security-and-testing/README.md)
-      * [01. Setup](<01. Web Penetration Testing/02. TCM Security/01. Practical Web Application Security and Testing/01. Setup.md>)
+      * [01. Setup](<01. Setup.md>)
 * [02. Podcast](<02. Podcast/README.md>)
 * [03. Writeups](<03. Writeups/README.md>)
