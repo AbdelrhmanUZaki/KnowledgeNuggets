@@ -139,13 +139,13 @@ Instead of using the IP, you can assign a hostname for the Ubuntu VM:
 sudo vim /etc/hosts
 ```
 
-2. Press `i` to enter insert mode.
-3. Add an entry like:
+1. Press `i` to enter insert mode.
+2. Add an entry like:
 ```
 192.168.X.X ubuntu-server
 ```
 
-4. Press `ESC`, then type `:wq` to save and exit.
+1. Press `ESC`, then type `:wq` to save and exit.
 
 Now, you can use:
 ```
