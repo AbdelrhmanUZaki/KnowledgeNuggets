@@ -20,7 +20,7 @@
   * [TCM Security](01.-web-application-penetration-testing/tcm-security/README.md)
     * [Practical Web Application Security and Testing](01.-web-application-penetration-testing/tcm-security/practical-web-application-security-and-testing/README.md)
       * [01. Setup Guide](<01. Setup Guide>)
-      * [02. servers](<02. servers.md>)
+      * [02. Servers](<02. Servers.md>)
       * 
 * [02. Podcasts](<02. Podcasts/README.md>)
 * [03. Writeups](<03. Writeups/README.md>)
