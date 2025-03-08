@@ -1,1 +1,0 @@
-This is a copy of readme named "README 1" in web penetst 
