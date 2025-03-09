@@ -1,6 +1,0 @@
-### Title Lab - Nginx and Server Logs
-
-### Lab -  and Server Logs
-
-## Lab - Nginx and  Logs
-
