@@ -23,4 +23,4 @@
         * [01. Servers and Clients](<Web Application Penetration Testing/TCM Security/Practical Web Application Security and Testing/02. Web Application Concepts/01. Servers and Clients.md>)
 * [Writeups](Writeups/README.md)
 * [Page 1](page-1.md)
-* [Page from obsidian](<Page from obsidian>)
+* [renamed Page from obsidian](<renamed Page from obsidian.md>)
