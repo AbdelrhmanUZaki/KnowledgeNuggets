@@ -27,6 +27,7 @@
         * [01. Setup](<Web Application Pentesting/02. Courses/03. TCM Security/Practical Web Application Security and Testing/01. Setup.md>)
         * [02. Web Application Concepts](web-application-pentesting/02.-courses/03.-tcm-security/practical-web-application-security-and-testing/02.-web-application-concepts/README.md)
           * [01. Servers and Clients](<Web Application Pentesting/02. Courses/03. TCM Security/Practical Web Application Security and Testing/02. Web Application Concepts/01. Servers and Clients.md>)
+          * [02. Lab - Nginx and Server Logs](<Web Application Pentesting/02. Courses/03. TCM Security/Practical Web Application Security and Testing/02. Web Application Concepts/02. Lab - Nginx and Server Logs.md>)
   * [03. Books (Coming soon)](<Web Application Pentesting/03. Books (Coming soon)/README.md>)
   * [04. Articles & Videos (Coming soon)](<Web Application Pentesting/04. Articles & Videos (Coming soon)/README.md>)
 * [Application Risk Assessment (Coming soon)](<Application Risk Assessment (Coming soon)/README.md>)
