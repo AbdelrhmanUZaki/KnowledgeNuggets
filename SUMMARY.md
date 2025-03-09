@@ -24,3 +24,4 @@
 * [Writeups](Writeups/README.md)
 * [Page 1](page-1.md)
 * [صفحة من جت هاب](صفحة من جتهاب.md)
+* [Page from obsidian](<Page from obsidian>])
