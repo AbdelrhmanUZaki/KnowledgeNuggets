@@ -1,2 +1,0 @@
-# Ebrahim Hegazy
-
