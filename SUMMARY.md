@@ -1,11 +1,6 @@
 # Table of contents
 
 * [Welcome to KnowledgeNuggets!](README.md)
-* [Application Risk Assessment (Coming soon)](<Application Risk Assessment (Coming soon)/README.md>)
-* [Mobile Application Pentesting (Coming soon)](<Mobile Application Pentesting (Coming soon)/README.md>)
-* [General Learning Resources (Coming soon)](general-learning-resources-coming-soon/README.md)
-  * [Articles](<General Learning Resources (Coming soon)/Articles/README.md>)
-  * [Videos](<General Learning Resources (Coming soon)/Videos/README.md>)
 * [Web Application Pentesting](web-application-pentesting/README.md)
   * [01. Methodology](web-application-pentesting/01.-methodology/README.md)
     * [01. General Advices](<Web Application Pentesting/01. Methodology/01. General Advices.md>)
@@ -34,3 +29,8 @@
           * [01. Servers and Clients](<Web Application Pentesting/02. Courses/03. TCM Security/Practical Web Application Security and Testing/02. Web Application Concepts/01. Servers and Clients.md>)
   * [03. Books (Coming soon)](<Web Application Pentesting/03. Books (Coming soon)/README.md>)
   * [04. Articles & Videos (Coming soon)](<Web Application Pentesting/04. Articles & Videos (Coming soon)/README.md>)
+* [Application Risk Assessment (Coming soon)](<Application Risk Assessment (Coming soon)/README.md>)
+* [Mobile Application Pentesting (Coming soon)](<Mobile Application Pentesting (Coming soon)/README.md>)
+* [General Learning Resources (Coming soon)](general-learning-resources-coming-soon/README.md)
+  * [Articles](<General Learning Resources (Coming soon)/Articles/README.md>)
+  * [Videos](<General Learning Resources (Coming soon)/Videos/README.md>)
