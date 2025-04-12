@@ -1,5 +1,5 @@
 - [Obsidian](https://obsidian.md/) (Note-taking app)
-- [Linux Setup](01.%20Hacking%20Setup/Linux/README.md)
+- [[01. Hacking Setup/Linux/README|Linux Setup]]
 - Fuzzing
 	- [Feroxbuster: A fast, simple, recursive content discovery tool written in Rust.](https://github.com/epi052/feroxbuster)
 	- [Dirsearch: Web path scanner](https://github.com/maurosoria/dirsearch)
