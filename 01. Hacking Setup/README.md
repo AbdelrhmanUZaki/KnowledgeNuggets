@@ -1,18 +1,18 @@
 - [Obsidian](https://obsidian.md/) (Note-taking app)
-- [[01. Hacking Setup/Linux/README|Linux Setup]]
-- Fuzzing
+- **Linux Setup:** Located in the `Linux` folder within the current directory
+- **Fuzzing:**
 	- [Feroxbuster: A fast, simple, recursive content discovery tool written in Rust.](https://github.com/epi052/feroxbuster)
 	- [Dirsearch: Web path scanner](https://github.com/maurosoria/dirsearch)
-- Burp Extensions: 
+- **Burp Extensions:** 
 	- Auth Analyzer
 	- JWT Editor
 	- Inql
 	- Upload scanner
 	- Content type converter
 	
-- Web Extensions:
+- **Web Extensions:**
 	- Wappalyzer - Technology profile
-	- Firefox:
+	- **Firefox:**
 		- [pwnfox](https://addons.mozilla.org/en-US/firefox/addon/pwnfox/) for proxy and its [jar file](https://github.com/yeswehack/PwnFox/releases/tag/v1.0.3) as an extension for burp suite to color the requests in the browser and in the burp.
-	- Brave:
+	- **Brave:**
 		- SwitchyOmega for proxy
