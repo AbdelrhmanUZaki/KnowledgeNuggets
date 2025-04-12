@@ -1,1 +1,0 @@
-General Articles start point

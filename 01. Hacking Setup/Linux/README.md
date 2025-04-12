@@ -11,7 +11,7 @@ Get the ISO from [Parrot-htb-6.3.2_amd64.iso](https://deb.parrot.sh/parrot/iso/6
 sudo apt update && sudo apt upgrade
 
 # Install apps
-sudo apt install rofi nala tmux xclip konsole
+sudo apt install -y rofi nala tmux xclip konsole seclists
 ```
 
 #### App Overview:
@@ -56,9 +56,9 @@ git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
 
 - `Lazy sync` command
 
-#### Add to `~/.config/nvim/:
+#### Add as `~/.config/nvim/:
 
-The nvim folder in [02. Tools] file.
+The **nvim** folder in Linux folder.
 
 ---
 ### Install Brave Browser
