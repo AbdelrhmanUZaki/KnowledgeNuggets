@@ -1,3 +1,5 @@
+### What is HSTS?
+
 **HTTP Strict Transport Security (HSTS)** is a security mechanism that enforces HTTPS-only communication by instructing browsers to reject any HTTP connections.
 
 ### Purpose:
