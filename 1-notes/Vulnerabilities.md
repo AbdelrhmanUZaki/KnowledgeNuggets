@@ -1,0 +1,5 @@
+# Vulnerabilities
+
+- [[CSRF]]
+- [[Open Redirection]]
+- 
