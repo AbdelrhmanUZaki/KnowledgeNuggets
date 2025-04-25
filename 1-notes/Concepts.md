@@ -1,4 +1,4 @@
 # Concepts
 
-- [HSTS](HSTS.md)
+- [HSTS](Concepts/HSTS.md)
 - 
