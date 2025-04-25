@@ -1,5 +1,5 @@
 # Courses
 
-- [Ebrahim Hegazy Course](Ebrahim%20Hegazy%20Course.md)
-- [TCM Security Academy](TCM%20Security%20Academy.md)
+- [[Ebrahim Hegazy Course]]
+- [[TCM Security Academy]]
 - 

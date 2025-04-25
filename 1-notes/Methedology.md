@@ -7,4 +7,4 @@
 - Check the website docs to understand it deeply.
 - To see the cashed data again, remove the headers `If-None-Match` `If-Modified-Since`.
 
-- [Godfather Orwa](Godfather%20Orwa.md)
+- [[Godfather Orwa]]

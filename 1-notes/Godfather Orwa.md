@@ -4,13 +4,13 @@ tags:
 ---
 1. Check out-of-scope websites for data leaks and JS files (don't test, it's forbidden).
     - You might find credentials, and if successful, log in to an in-scope website ⇒ auth bypass P1.
-2. Perform `GitHub`, `[Shodan.io](<https://shodan.io>)` reconnaissance, and `Google Dorking`
+2. Perform `GitHub`, `[[<https://shodan.io>|Shodan.io]]` reconnaissance, and `Google Dorking`
 
 - The Org name you found in step 3 below, search using it at recon stage.
     - helpful tools
-        - [https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#)
-        - [Google Dorks for Bug Bounty (taksec.github.io)](https://taksec.github.io/google-dorks-bug-bounty/)
-        - [Investigator (abhijithb200.github.io)](https://abhijithb200.github.io/investigator/)
+        - [[https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#](https://dorks.faisalahmed.me/#]]
+        - [[taksec.github.io|Google Dorks for Bug Bounty (taksec.github.io|[taksec.github.io)]]]]))
+        - [[abhijithb200.github.io|Investigator (abhijithb200.github.io|[abhijithb200.github.io)]]]]))
 
 1. Use [crt.sh](http://crt.sh/) to find domains/sub-domains.
     - How to know if the domains/sub-domains you found, belong to the organization?
