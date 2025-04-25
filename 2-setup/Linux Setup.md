@@ -58,7 +58,7 @@ git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
 
 #### Add as `~/.config/nvim/:
 
-The [[nvim config.zip]] in attachments folder.
+The [nvim config](nvim%20config.zip) in attachments folder.
 
 ---
 ### Install Brave Browser

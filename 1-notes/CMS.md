@@ -1,4 +1,4 @@
 # CMS
 
-- [[Wordpress]]
+- [Wordpress](Wordpress.md)
 - 

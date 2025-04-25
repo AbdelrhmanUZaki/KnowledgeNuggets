@@ -4,4 +4,4 @@ I'm **Abdelrahman Zaki**, Associate InfoSec Consultant at [ZINAD IT](https://www
 
 This is a collection of **quick, reference-ready tech notes**.
 
-Start with the [[0-Index|Index]].
+Start with the [Index](0-Index.md).

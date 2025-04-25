@@ -1,5 +1,5 @@
 # Vulnerabilities
 
-- [[CSRF]]
-- [[Open Redirection]]
+- [CSRF](CSRF.md)
+- [Open Redirection](Open%20Redirection.md)
 - 

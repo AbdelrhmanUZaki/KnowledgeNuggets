@@ -1,10 +1,10 @@
 # Penetration Testing
 
-- [[Methedology]]
-- [[Vulnerabilities]]
-- [[Checklists]]
-- [[CMS]]
-- [[Courses]]
-- [[Books]]
+- [Methedology](Methedology.md)
+- [Vulnerabilities](Vulnerabilities.md)
+- [Checklists](Checklists.md)
+- [CMS](CMS.md)
+- [Courses](Courses.md)
+- [Books](Books)
 - 
 
