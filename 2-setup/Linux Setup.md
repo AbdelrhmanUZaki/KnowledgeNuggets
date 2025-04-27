@@ -54,7 +54,7 @@ git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
 - Learn customization of ui & base46 from `:h nvui`.
 ##### Update
 
-- `Lazy sync` command
+- `Lazy sync` nvim command
 
 #### Add as `~/.config/nvim/:
 
@@ -68,7 +68,13 @@ curl -fsS https://dl.brave.com/install.sh | sh
 ```
 
 ---
+### Install VS Code from this [Source](https://code.visualstudio.com/docs/setup/linux)
 
+```bash
+sudo apt install ./<file>.deb
+```
+
+---
 ### Customize Your Shell
 
 #### Add to `~/.bashrc`:
