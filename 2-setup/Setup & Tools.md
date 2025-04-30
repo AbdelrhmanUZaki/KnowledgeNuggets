@@ -3,6 +3,9 @@
 
 - Fuzzing:
 	- [Feroxbuster: A fast, simple, recursive content discovery tool written in Rust.](https://github.com/epi052/feroxbuster)
+	```
+	curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s $HOME/.local/bin
+	```
 	- [Dirsearch: Web path scanner](https://github.com/maurosoria/dirsearch)
 	
 - Burp Extensions: 
