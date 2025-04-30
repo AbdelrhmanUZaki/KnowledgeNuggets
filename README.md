@@ -4,4 +4,14 @@ I'm **Abdelrahman Zaki**, Associate InfoSec Consultant at [ZINAD IT](https://www
 
 This is a collection of **quick, reference-ready tech notes**.
 
-Start with the [Index](1-notes/0-Index.md).
+---
+
+## Index
+
+- [Setup & Tools](../2-setup/Setup%20&%20Tools.md)
+- [Penetration Testing](Penetration%20Testing.md)
+- [Concepts](Concepts.md)
+- [Network](Network.md)
+- [OSINT](OSINT.md)
+
+
