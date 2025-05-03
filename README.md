@@ -13,5 +13,3 @@ This is a collection of **quick, reference-ready tech notes**.
 - [Concepts](1-notes/Concepts.md)
 - [Network](1-notes/Network.md)
 - [OSINT](1-notes/OSINT.md)
-
-

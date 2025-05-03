@@ -16,7 +16,6 @@ tags:
 - [08. Reporting](08.%20Reporting.md)
 - [09. Final Thoughts](09.%20Final%20Thoughts.md)
 
-
 ---
 
 **Course Resources**
