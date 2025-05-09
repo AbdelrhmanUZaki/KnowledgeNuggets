@@ -18,5 +18,4 @@ tags:
 - [11. Subdomain Takeover](11.%20Subdomain%20Takeover.md)
 - [12. Nmap](12.%20Nmap.md)
 - [13. BurpSuite Guide](13.%20BurpSuite%20Guide.md)
-- 
 

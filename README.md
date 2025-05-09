@@ -8,8 +8,11 @@ This is a collection of **quick, reference-ready tech notes**.
 
 ## Index
 
-- [Setup & Tools](2-setup/Setup%20&%20Tools.md)
-- [Penetration Testing](1-notes/Penetration%20Testing.md)
-- [Concepts](1-notes/Concepts.md)
-- [Network](1-notes/Network.md)
-- [OSINT](1-notes/OSINT.md)
+- ### [Setup & Tools](2-setup/Setup%20&%20Tools.md)
+- ### [Courses](1-notes/Courses.md)
+- ### [Penetration Testing](1-notes/Penetration%20Testing.md)
+- ### [Application Security (Soon)](Application%20Security%20(Soon).md) 
+- ### [Concepts](1-notes/Concepts.md)
+- ### [Network](1-notes/Network.md)
+- ### [OSINT](1-notes/OSINT.md)
+- ### [OWASP](1-notes/OWASP.md)
