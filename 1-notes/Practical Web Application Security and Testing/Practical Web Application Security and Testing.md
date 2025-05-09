@@ -19,4 +19,4 @@ tags:
 ---
 
 **Course Resources**
-https://github.com/mttaggart/pwst-resources
+- https://github.com/mttaggart/pwst-resources
