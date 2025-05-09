@@ -3,7 +3,6 @@
 Get the ISO from [Parrot-htb-6.3.2_amd64.iso](https://deb.parrot.sh/parrot/iso/6.3.2/Parrot-htb-6.3.2_amd64.iso)
 
 ---
-
 ### Install Essential Applications
 
 ```bash
@@ -164,3 +163,22 @@ bind-key -T copy-mode-vi MouseDragEnd1Pane \
 	- `Ctrl + BO` switch focus between Panes.
 
 ---
+#### If needed
+
+- Configure IPv4 and DNS
+	- Use the following commands to assign a static IP (`192.168.1.50`), set the gateway (`192.168.1.1`), and configure Cloudflare DNS (`1.1.1.1`, `1.0.0.1`) on the `enp0s3` interface:
+		```bash
+		nmcli con modify "enp0s3-autoconnect" ipv4.addresses 192.168.1.50/24
+		nmcli con modify "enp0s3-autoconnect" ipv4.gateway 192.168.1.1
+		nmcli con modify "enp0s3-autoconnect" ipv4.dns "1.1.1.1 1.0.0.1"
+		nmcli con modify "enp0s3-autoconnect" ipv4.method manual
+		nmcli con down "enp0s3-autoconnect" && nmcli con up "enp0s3-autoconnect"
+		```
+	- To undo it use:
+		```bash
+		nmcli con modify "enp0s3-autoconnect" ipv4.addresses ""
+		nmcli con modify "enp0s3-autoconnect" ipv4.gateway ""
+		nmcli con modify "enp0s3-autoconnect" ipv4.dns ""
+		nmcli con modify "enp0s3-autoconnect" ipv4.method auto
+		nmcli con down "enp0s3-autoconnect" && nmcli con up "enp0s3-autoconnect"
+		```

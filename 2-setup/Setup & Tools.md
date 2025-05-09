@@ -16,7 +16,8 @@
 	- Content type converter
 	
 - Web Extensions:
-	- Wappalyzer - Technology profile
+	- [Wappalyzer - Technology profile](https://chromewebstore.google.com/detail/wappalyzer-technology-pro/gppongmhjkpfnbhagpmjfkannfbllamg)
+	- [Fake Filler](https://chromewebstore.google.com/detail/bnjjngeaknajbdcgpfkgnonkmififhfo?utm_source=item-share-cb)
 	- Firefox:
 		- [pwnfox](https://addons.mozilla.org/en-US/firefox/addon/pwnfox/) for proxy and its [jar file](https://github.com/yeswehack/PwnFox/releases/tag/v1.0.3) as an extension for burp suite to color the requests in the browser and in the burp.
 	- Brave:
