@@ -5,7 +5,7 @@ tags:
 ### Content
 ---
 - [01. Application Secure Design Foundations](01.%20Application%20Secure%20Design%20Foundations.md)
-- [[02. Introduction to Threat Modeling with Threat Canvas (Practical Guide)]]
+- [02. Introduction to Threat Modeling with Threat Canvas - Practical Guide](02.%20Introduction%20to%20Threat%20Modeling%20with%20Threat%20Canvas%20-%20Practical%20Guide.md)
 - 
 
 
