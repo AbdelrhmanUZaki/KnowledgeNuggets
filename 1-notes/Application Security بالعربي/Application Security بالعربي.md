@@ -6,7 +6,6 @@ tags:
 ---
 - [01. Application Secure Design Foundations](01.%20Application%20Secure%20Design%20Foundations.md)
 - 
-- 
 
 
 ---
