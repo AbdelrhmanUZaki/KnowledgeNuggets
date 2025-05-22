@@ -160,3 +160,10 @@ Once the handshake is complete, both `a` and `b` are securely erased, as require
 ### The Big Idea: Forward Secrecy
 
 **Forward secrecy** means: even if the server’s future keys are stolen, the past stays secret — because each session had its own keys that are gone forever.
+
+---
+
+### References
+- [Transport Layer Security, TLS 1.2 and 1.3 Explained by Example - YouTube](https://www.youtube.com/watch?v=AlE5X1NlHgg&list=PLQnljOFTspQW4yHuqp_Opv853-G_wAiH-)
+- [Secret Key Exchange (Diffie-Hellman) - Computerphile - YouTube](https://www.youtube.com/watch?v=NmM9HA2MQGI)
+- [Diffie-Hellman Key Exchange: How to Share a Secret - YouTube](https://www.youtube.com/watch?v=85oMrKd8afY)
