@@ -7,8 +7,11 @@
 	curl -sL https://raw.githubusercontent.com/epi052/feroxbuster/main/install-nix.sh | bash -s $HOME/.local/bin
 	```
 	- [Dirsearch: Web path scanner](https://github.com/maurosoria/dirsearch)
-	- FFUF (without its default status code)
-	  `brew install ffuf`
+	- FFUF
+		- `brew install ffuf`
+		- Without its default status code to avoid missing status codes for APIs like `405` or `415`
+		- `-fs`: Filter trash response by size with
+		- `-ac`: Automatic filtering, so you don't have to use `-fs 559`, for example.
 	- Nuclei
 	  `brew install nuclei`
 	
