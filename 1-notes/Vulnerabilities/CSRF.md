@@ -85,6 +85,9 @@ https://app.example.com
 ```
 ### What's the difference between a site and an origin?
 
+**Origin** is the combination of **scheme + host + port**; for example, `https://app.example.com:443` and `https://api.example.com:443` are **different origins** because the hosts differ.  
+**Site** depends only on the **eTLD+1**, so both `app.example.com` and `api.example.com` belong to the **same site** (`example.com`) even though their origins are different.
+
 #### 1. "Same-site" or "Cross-site"?
 
 | Origin A                      | Origin B                        | **"Same-site" or "cross-site"?**             |

