@@ -39,7 +39,7 @@
 	    ``` 
 - HTTP Headers
 	- To get some headers like `Server` or `X-Powered-By` using a command like `curl https://domain.com -v`
-#### 2. [[OSINT]]
+#### 2. [OSINT](OSINT.md)
 #### 3. Automated Discovery 
 - Seclists using `ffuf`, `dirb`, or `gobuster`
 	- `ffuf -w /usr/share/wordlists/SecLists/Discovery/Web-Content/common.txt -u http://10.81.180.184/FUZZ`
