@@ -10,7 +10,10 @@ Get the ISO from [Parrot-htb-6.3.2_amd64.iso](https://deb.parrot.sh/parrot/iso/6
 sudo apt update && sudo apt upgrade
 
 # Install apps
-sudo apt install -y rofi nala tmux xclip konsole seclists
+sudo apt install -y rofi nala tmux xclip konsole gh
+
+sudo apt install -y seclists 
+
 ```
 
 #### App Overview:
@@ -93,6 +96,26 @@ alias grep='grep --color'
 alias md=mkdir
 alias df='df -h'
 alias ..='cd ..'
+alias ...='cd ../..'
+
+# Function to show current Git branch
+parse_git_branch() {
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$branch" ]; then
+        echo "($branch)"
+    fi
+}
+
+# Enhanced PS1
+export PS1="\[\033[1;34m\]\u\[\033[0m\]@\[\033[1;33m\]\h\[\033[0m\]:\[\033[1;36m\]\w\[\033[0m\] \[\033[1;32m\]\$(parse_git_branch)\[\033[0m\] \$ "
+
+# Functions
+
+# Create and enter a directory
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
 
 # System Management
 alias u='sudo nala update && sudo nala upgrade'
@@ -118,11 +141,45 @@ alias gst='git status'
 # Exports
 export EDITOR=vim
 export TERM=xterm-256color
+
+# opencode
+alias oc=opencode
+
+# uv
+export PATH="/Users/a.zaki/.local/bin:$PATH"
+
+# NPM global bin (added by Qwen Code installer)
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+#python
+alias python=python3
+
+ff() {
+  find . -type f | sed 's|^\./||' | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+fa() {
+  rg --files | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+
 ```
 
 ---
 
 #### Add to `~/.profile`:
+
+Only with XOrg
 
 ```bash
 # Remap Caps Lock to Escape (great for Vim usage)
