@@ -28,7 +28,7 @@ sudo apt install -y rofi nala tmux xclip konsole seclists
 ### Nvim
 
 ```
-wget https://github.com/neovim/neovim/releases/download/v0.11.0/nvim-linux-x86_64.appimage
+wget https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.appimage
 
 chmod +x nvim-linux-x86_64.appimage
 
@@ -36,7 +36,7 @@ sudo mv nvim-linux-x86_64.appimage /usr/bin/nvim
 
 # Nerd Font Section
 
-wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Agave.zip
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Agave.zip
 unzip Agave.zip -d ~/Agave
 sudo mkdir -p /usr/share/fonts/truetype/nerd-fonts
 sudo cp ~/Agave/*.ttf /usr/share/fonts/truetype/nerd-fonts/
