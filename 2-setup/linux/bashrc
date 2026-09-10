@@ -148,3 +148,4 @@ export PATH="$PATH:$HOME/.npm-global/bin:$HOME/go/bin"
 
 # bat is shipped as batcat on Debian/Ubuntu
 command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1 && alias bat=batcat
+export PATH="$HOME/.local/bin:$PATH"
