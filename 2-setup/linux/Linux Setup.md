@@ -9,7 +9,7 @@ cd 2-setup
 ./install.sh
 ```
 
-Installs (idempotent, re-runnable): apt tools, security/wordlist packages, Neovim AppImage, Agave Nerd Font, Telegram. Optional pentest packages via `SECURITY_PACKAGES=()`.
+Installs (idempotent, re-runnable): apt tools, security/wordlist packages, Neovim AppImage, Agave Nerd Font, Telegram, rtk (`~/.local/bin`). Optional pentest packages via `SECURITY_PACKAGES=()`.
 
 ## 2. Apply dotfiles
 

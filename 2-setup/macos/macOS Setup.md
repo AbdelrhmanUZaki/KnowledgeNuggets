@@ -10,6 +10,12 @@ brew install --cask warp
 brew install jtroo/kanata/kanata
 ```
 
+Quick Install (Linux/macOS) — installs to `~/.local/bin` (already on `PATH` via `bashrc`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+```
+
 ## 2. Apply dotfiles
 
 ```bash
