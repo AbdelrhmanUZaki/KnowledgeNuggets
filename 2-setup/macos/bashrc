@@ -1,0 +1,188 @@
+alias vi='nvim'
+alias ref='source ~/.bashrc'
+alias ed='vi ~/.bashrc'
+alias cat='ccat'
+alias c='ccat'
+
+
+# ~/.bashrc
+
+# Enable colorized output for ls
+if [ "$(uname)" == "Darwin" ]; then
+    alias ls='ls -G'
+else
+    alias ls='ls --color=auto'
+fi
+
+# Human-readable and all files
+alias ll='ls -alh'
+alias la='ls -A'
+alias l='ls -CF'
+
+# Git shortcuts
+alias gst='git status --short'
+alias gco='git checkout'
+alias gcm='git commit -m'
+alias gl='git log --oneline --graph --all --decorate'
+
+# Python virtualenv shortcut
+alias venv='source venv/bin/activate'
+
+# Faster navigation
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Enable colored grep
+alias grep='grep --color=auto'
+
+# Function to show current Git branch
+parse_git_branch() {
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$branch" ]; then
+        echo "($branch)"
+    fi
+}
+
+# Enhanced PS1
+export PS1="\[\033[1;34m\]\u\[\033[0m\]@\[\033[1;33m\]\h\[\033[0m\]:\[\033[1;36m\]\w\[\033[0m\] \[\033[1;32m\]\$(parse_git_branch)\[\033[0m\] \$ "
+
+# Functions
+
+# Create and enter a directory
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Quick cleanup of all .pyc files
+cleanpyc() {
+    find . -name "*.pyc" -exec rm -f {} \;
+}
+
+# Reload bashrc easily
+reload() {
+    source ~/.bashrc
+    echo "Bashrc reloaded!"
+}
+
+export PATH="/Applications/Fortify/OpenText_SAST_Fortify_25.2.0/bin:$PATH"
+
+export PATH="/Applications/Fortify/OpenText_Application_Security_Tools_25.2.0/bin:$PATH"
+export PATH="$PATH:$HOME/flutter/bin"
+
+# opencode
+alias oc=opencode
+
+# uv
+export PATH="$HOME/.local/bin:$PATH"
+
+# NPM global bin (added by Qwen Code installer)
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+#python
+alias python=python3
+
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+alias chromedebug="\"Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --remote-debugging-port=9222 --user-data-dir=\"$HOME/Library/Application Support/Google/Chrome/Default\""
+
+
+# alias ff='find . -type f | sed "s|^\./||" | fzf --height=80% --layout=reverse --border --preview '"'"'bat --style=numbers --color=always --line-range=:300 {}'"'"' --bind '"'"'ctrl-/:toggle-preview'"'"' --preview-window '"'"'right,60%,border-left,wrap'"'"''
+# alias fa='rg --files | fzf --height=80% --layout=reverse --border --preview '"'"'bat --style=numbers --color=always --line-range=:300 {}'"'"' --bind '"'"'ctrl-/:toggle-preview'"'"' --preview-window '"'"'right,60%,border-left,wrap'"'"''
+
+# ff() {
+#   find . -type f | sed 's|^\./||' | \
+#     fzf --query="$1" \
+#         --height=80% --layout=reverse --border \
+#         --preview 'bat --style=numbers --color=always {}' \
+#         --bind 'ctrl-/:toggle-preview' \
+#         --preview-window 'right,60%,border-left,wrap'
+# }
+#
+# fa() {
+#   rg --files | \
+#     fzf --query="$1" \
+#         --height=80% --layout=reverse --border \
+#         --preview 'bat --style=numbers --color=always {}' \
+#         --bind 'ctrl-/:toggle-preview' \
+#         --preview-window 'right,60%,border-left,wrap'
+# }
+
+
+ff() {
+  find . -type f | sed 's|^\./||' | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+fa() {
+  rg --files | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+
+# set -o vi
+#
+# __insert_test__() {
+#   READLINE_LINE='echo inserted-into-command-line'
+#   READLINE_POINT=${#READLINE_LINE}
+# }
+#
+# __fzf_history_line__() {
+#   local selected
+#   selected="$(
+#     HISTTIMEFORMAT= history \
+#       | sed -E 's/^[[:space:]]*[0-9]+[[:space:]]+//' \
+#       | awk 'NF' | awk '!seen[$0]++' | tail -r \
+#       | fzf --height=40% --layout=reverse --border --prompt='History> '
+#   )"
+#   [[ -n "$selected" ]] || return
+#   READLINE_LINE="$selected"
+#   READLINE_POINT=${#READLINE_LINE}
+# }
+#
+# bind -m vi-insert -r '\C-r' 2>/dev/null
+# bind -m vi-command -r '\C-r' 2>/dev/null
+# bind -r '\C-x\C-r' 2>/dev/null
+# bind -r '\C-x\C-t' 2>/dev/null
+#
+# bind -x '"\C-x\C-t": __insert_test__'
+# bind -x '"\C-x\C-r": __fzf_history_line__'
+# bind -m vi-insert '"\C-r": "\C-x\C-r"'
+# bind -m vi-command '"\C-r": "\C-x\C-r"'
+
+set -o vi
+
+__fzf_history__() {
+  local selected
+  selected=$(fc -ln 1 | awk '!seen[$0]++' | tac | \
+    fzf --height=40% --layout=reverse --border --prompt='History> ')
+  [[ -n "$selected" ]] || return
+  if [[ -z ${READLINE_LINE+x} ]]; then
+    history -s "$selected"
+  else
+    READLINE_LINE="$selected"
+    READLINE_POINT=${#READLINE_LINE}
+  fi
+}
+
+# Your own binding fallback (works even without fzf key-bindings file)
+bind -m vi-insert -x '"\C-r":__fzf_history__'
+bind -m vi-command -x '"\C-r":__fzf_history__'
+
+# Source official fzf bindings from whichever location exists
+[ -f /opt/homebrew/opt/fzf/shell/key-bindings.bash ] && source /opt/homebrew/opt/fzf/shell/key-bindings.bash || true
+[ -f /usr/local/opt/fzf/shell/key-bindings.bash ] && source /usr/local/opt/fzf/shell/key-bindings.bash || true
+[ -f ~/.fzf.bash ] && source ~/.fzf.bash || true
+
+
+export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
+export PATH="$PATH:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin"
+
+# mimocode
+export PATH=$HOME/.mimocode/bin:$PATH

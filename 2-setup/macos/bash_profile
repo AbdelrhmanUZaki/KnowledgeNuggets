@@ -1,0 +1,48 @@
+
+
+# ~/.bash_profile
+
+# Load ~/.bashrc for interactive shells
+if [ -f ~/.bashrc ]; then
+    source ~/.bashrc
+fi
+
+# Set default editor
+export EDITOR="nano"
+
+# Set PATH additions (if any)
+export PATH="$HOME/bin:$PATH"
+
+# Prompt with username, hostname, current directory
+export PS1="\u@\h:\w\$ "
+
+export PATH=$HOME/go/bin:$PATH
+
+export PATH="/Applications/Fortify/OpenText_SAST_Fortify_25.2.0/bin:$PATH"
+
+export PATH="/Applications/Fortify/OpenText_Application_Security_Tools_25.2.0/bin:$PATH"
+export PATH="$HOME/Downloads/flutter/bin:$PATH"
+
+# uv
+export PATH="$HOME/.local/bin:$PATH"
+
+# Added by Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+# Added by Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+# Added by Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+# Added by Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+. "$HOME/.local/bin/env"
+
+# Added by Antigravity
+export PATH="$HOME/.antigravity/antigravity/bin:$PATH"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"

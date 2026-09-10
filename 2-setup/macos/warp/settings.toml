@@ -1,0 +1,81 @@
+[code]
+
+[code.editor]
+auto_open_code_review_pane_on_first_agent_change = true
+
+[appearance]
+
+[appearance.vertical_tabs]
+compact_subtitle = "branch"
+display_granularity = "tabs"
+show_details_on_hover = true
+view_mode = "compact"
+primary_info = "working_directory"
+enabled = true
+
+[appearance.themes]
+system_theme = false
+theme = "adeberry"
+
+[appearance.text]
+notebook_font_size = 14.0
+font_size = 13.0
+
+[appearance.window]
+zoom_level = 110
+
+[agents]
+cloud_conversation_storage_enabled = false
+
+[agents.warp_agent]
+is_any_ai_enabled = false
+
+[agents.warp_agent.input]
+nld_in_terminal_enabled = true
+
+[session]
+
+[session.new_session_shell_override]
+executable = "/bin/bash"
+
+[notifications]
+
+[notifications.preferences]
+is_agent_task_completed_enabled = true
+is_long_running_enabled = true
+is_needs_attention_enabled = true
+is_password_prompt_enabled = true
+long_running_threshold = 30
+mode = "enabled"
+play_notification_sound = true
+
+[privacy]
+telemetry_enabled = true
+crash_reporting_enabled = true
+
+[general]
+mouse_scroll_multiplier = 1.0
+default_session_mode = "terminal"
+
+[terminal]
+maximum_grid_size = 80000
+osc52_clipboard_access = "write_only"
+
+[terminal.input]
+input_box_type_setting = "classic"
+alias_expansion_enabled = false
+completions_open_while_typing = true
+honor_ps1 = false
+
+[terminal.input.extra_meta_keys]
+left_alt = true
+right_alt = true
+
+[text_editing]
+vim_mode_enabled = true
+
+[account]
+is_settings_sync_enabled = true
+
+[warp_drive]
+enabled = false
