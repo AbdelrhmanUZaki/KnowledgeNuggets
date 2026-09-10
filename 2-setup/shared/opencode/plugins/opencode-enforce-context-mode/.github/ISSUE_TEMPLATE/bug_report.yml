@@ -1,0 +1,42 @@
+name: Bug Report
+
+description: File a bug report
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Description
+
+  - type: textarea
+    attributes:
+      label: Description
+      placeholder: Clear description of the bug
+
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+      placeholder: What you expected to happen
+
+  - type: textarea
+    attributes:
+      label: Actual Behavior
+      placeholder: What actually happened
+
+  - type: input
+    attributes:
+      label: ENFORCE_CONTEXT_MODE value
+      placeholder: dry-run, 1, etc.
+
+  - type: input
+    attributes:
+      label: OpenCode version
+      placeholder: version

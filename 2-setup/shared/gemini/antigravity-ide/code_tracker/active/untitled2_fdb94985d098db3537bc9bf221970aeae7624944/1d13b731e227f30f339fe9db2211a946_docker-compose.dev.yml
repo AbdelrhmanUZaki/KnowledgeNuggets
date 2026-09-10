@@ -1,0 +1,71 @@
+�version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: aber_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-aber_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-aber_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aber_network
+
+  api:
+    build: .
+    container_name: aber_api
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-aber_db}
+      SECRET_KEY: ${SECRET_KEY}
+      B2_KEY_ID: ${B2_KEY_ID}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
+      B2_BUCKET_NAME: ${B2_BUCKET_NAME}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      # Individual file mounts removed as they are now moved inside the backend folder
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - aber_network
+
+#   telegram_bot:
+#     build: .
+#     container_name: aber_bot
+#     restart: always
+#     command: python scripts/admin_uploader_bot.py
+#     environment:
+#       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-aber_db}
+#       TG_API_ID: ${TG_API_ID}
+#       TG_API_HASH: ${TG_API_HASH}
+#       TG_BOT_TOKEN: ${TG_BOT_TOKEN}
+#       TG_ADMIN_ID: ${TG_ADMIN_ID}
+#     volumes:
+#       - .:/app
+#     depends_on:
+#       db:
+#         condition: service_healthy
+#     networks:
+#       - aber_network
+
+networks:
+  aber_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+�"(fdb94985d098db3537bc9bf221970aeae76249442Lfile://~/StudioProjects/untitled2/backend/docker-compose.dev.yml:-file://~/StudioProjects/untitled2

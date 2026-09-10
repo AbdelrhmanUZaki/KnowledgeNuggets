@@ -1,0 +1,9 @@
+�flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/images/splash_logo.png"
+  android_12:
+    image: "assets/images/splash_logo.png"
+    icon_background_color: "#FFFFFF"
+  ios: true
+  android: true
+�"(fdb94985d098db3537bc9bf221970aeae76249442Hfile://~/StudioProjects/untitled2/flutter_native_splash.yaml:-file://~/StudioProjects/untitled2

@@ -1,0 +1,24 @@
+name: Feature Request
+
+description: Suggest a new feature
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Description
+
+  - type: textarea
+    attributes:
+      label: What problem does this solve?
+      placeholder: The problem you're solving
+
+  - type: textarea
+    attributes:
+      label: Proposed solution
+      placeholder: How should it work?
+
+  - type: textarea
+    attributes:
+      label: Alternatives considered
+      placeholder: Other approaches

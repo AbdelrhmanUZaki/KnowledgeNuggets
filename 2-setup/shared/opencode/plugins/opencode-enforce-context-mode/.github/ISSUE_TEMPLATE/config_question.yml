@@ -1,0 +1,19 @@
+name: Config Question
+
+description: Questions about configuration and usage
+
+body:
+  - type: textarea
+    attributes:
+      label: Question
+      placeholder: Your question
+
+  - type: input
+    attributes:
+      label: ENFORCE_CONTEXT_MODE value
+      placeholder: dry-run, 1, etc.
+
+  - type: input
+    attributes:
+      label: OpenCode version
+      placeholder: version
