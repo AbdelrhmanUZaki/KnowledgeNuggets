@@ -1,0 +1,10 @@
+node_modules
+package.json
+package-lock.json
+bun.lock
+.gitignore
+context-mode/
+opencode-notifier-state.json
+*.db
+*.db-shm
+*.db-wal
