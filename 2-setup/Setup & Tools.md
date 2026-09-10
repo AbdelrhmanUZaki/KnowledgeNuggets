@@ -1,5 +1,5 @@
 - [Obsidian](https://obsidian.md/) (Note-taking app)
-- [Linux Setup](Linux%20Setup.md)
+- [Linux Setup](linux/Linux%20Setup.md)
 - warp terminal
 	- Offers some features like a very big screen for all outputs that was printed in the terminal, also copies the output of a command fast
 - **Fuzzing**:
