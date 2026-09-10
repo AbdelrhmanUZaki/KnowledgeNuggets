@@ -1,0 +1,88 @@
+;; kanata config (Linux) -- port of the macOS karabiner scroll/nav rules
+;; from the `main` branch: vim_scrolling.json + space nav.
+;; Install:  sudo apt install kanata  (or from GitHub releases)
+;; Autostart: see Linux Setup.md (systemd user service or .xprofile)
+;; Manual run:  kanata -c ~/dotfiles/kanata.kbd
+;;
+;; Layout:
+;;   caps     -> tap Escape, hold for Scroll mode
+;;   space    -> tap Space, hold for Nav layer
+;;   all other keys pass through unchanged (no homerow mods)
+;; Nav layer (hold space, 280ms -- macOS space_nav_mode):
+;;   h/j/k/l  -> Left / Down / Up / Right arrows
+;; Scroll mode (hold caps -- macOS vim_scrolling):
+;;   j        -> scroll down         k   -> scroll up
+;;   h        -> scroll left         l   -> scroll right
+;;   d        -> scroll down         e   -> scroll up
+;;   c        -> fast scroll down    s   -> fast scroll up
+;;   f        -> scroll right        w   -> scroll left
+;;   u        -> fast scroll up
+;;   g        -> top of document (double-tap g -> bottom)  [port of gg/G]
+;;   caps     -> Escape
+
+;; username sync keystates disabled: kanata on Linux doesn't need it
+(defcfg
+  process-unmapped-keys yes)
+
+(defsrc
+  esc caps a s d f g h j k l ; e c w u i spc)
+
+(deflayer base
+  grv
+  (tap-hold 200 200 esc (layer-while-held scroll))
+  a
+  s
+  d
+  f
+  g
+  h
+  j
+  k
+  l
+  ;
+  e
+  c
+  w
+  u
+  i
+  (tap-hold 280 280 spc (layer-while-held nav)))
+
+(deflayer nav
+  _
+  _
+  _
+  _
+  _
+  _
+  _
+  left
+  down
+  up
+  right
+  _
+  _
+  _
+  _
+  _
+  _
+  _)
+
+(deflayer scroll
+  _
+  esc
+  _
+  (mwheel-up 50 360)
+  (mwheel-down 50 120)
+  (mwheel-right 50 120)
+  (tap-dance 250 (C-home C-end))
+  (mwheel-left 50 120)
+  (mwheel-down 50 120)
+  (mwheel-up 50 120)
+  (mwheel-right 50 120)
+  _
+  (mwheel-up 50 120)
+  (mwheel-down 50 360)
+  (mwheel-left 50 120)
+  (mwheel-up 50 360)
+  _
+  _)

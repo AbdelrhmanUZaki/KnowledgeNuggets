@@ -1,0 +1,139 @@
+# ~/.bashrc - Linux (managed by 2-setup/linux/restore.sh)
+
+# interactive-only guard
+case $- in
+    *i*) ;;
+      *) return;;
+esac
+
+HISTCONTROL=ignoreboth
+shopt -s histappend
+HISTSIZE=5000
+HISTFILESIZE=10000
+shopt -s checkwinsize
+
+# less friendly for non-text input files
+[ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
+
+# Vim
+alias vi='nvim'
+set -o vi
+
+# Terminal shortcuts
+alias c='clear'
+alias h='history'
+alias hs='history | grep'
+alias grep='grep --color=auto'
+alias cat='bat'
+
+# Directory & file
+alias ls='ls --color=auto'
+alias ll='ls -alh'
+alias la='ls -A'
+alias l='ls -CF'
+alias md='mkdir'
+alias df='df -h'
+alias ..='cd ..'
+alias ...='cd ../..'
+
+# Git shortcuts
+alias gst='git status --short'
+alias gco='git checkout'
+alias gcm='git commit -m'
+alias gl='git log --oneline --graph --all --decorate'
+
+# Python
+alias python='python3'
+alias venv='source venv/bin/activate'
+
+# opencode
+alias oc='opencode'
+
+# Function to show current Git branch
+parse_git_branch() {
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    if [ -n "$branch" ]; then
+        echo "($branch)"
+    fi
+}
+
+# Enhanced PS1
+export PS1="\[\033[1;34m\]\u\[\033[0m\]@\[\033[1;33m\]\h\[\033[0m\]:\[\033[1;36m\]\w\[\033[0m\] \[\033[1;32m\]\$(parse_git_branch)\[\033[0m\] \$ "
+
+# Create and enter a directory
+mkcd() {
+    mkdir -p "$1" && cd "$1"
+}
+
+# Quick cleanup of all .pyc files
+cleanpyc() {
+    find . -name "*.pyc" -exec rm -f {} \;
+}
+
+# Reload bashrc easily
+reload() {
+    source ~/.bashrc
+    echo "Bashrc reloaded!"
+}
+
+# Fuzzy-find a file under cwd and open it with nvim
+ff() {
+  find . -type f | sed 's|^\./||' | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+# Fuzzy-find any tracked file (git-aware) and open it with nvim
+fa() {
+  rg --files | \
+    fzf --query="$1" \
+        --height=80% --layout=reverse --border \
+        --preview 'bat --style=numbers --color=always {}' \
+        --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
+        --preview-window 'right,60%,border-left,wrap'
+}
+
+# fzf history search on C-r (vi insert + command modes)
+__fzf_history__() {
+  local selected
+  selected=$(fc -ln 1 | awk '!seen[$0]++' | tac | \
+    fzf --height=40% --layout=reverse --border --prompt='History> ')
+  [[ -n "$selected" ]] || return
+  if [[ -z ${READLINE_LINE+x} ]]; then
+    history -s "$selected"
+  else
+    READLINE_LINE="$selected"
+    READLINE_POINT=${#READLINE_LINE}
+  fi
+}
+bind -m vi-insert -x '"\C-r":__fzf_history__'
+bind -m vi-command -x '"\C-r":__fzf_history__'
+
+# System management
+alias u='sudo nala update && sudo nala upgrade'
+alias install='sudo nala install'
+alias r='sudo nala remove'
+alias search='sudo nala search'
+alias reboot='systemctl reboot'
+alias poweroff='systemctl poweroff'
+alias suspend='systemctl suspend'
+
+# Config management
+alias ed='vi ~/.bashrc'
+alias ref='source ~/.bashrc'
+
+# Networking
+alias p='ping google.com'
+alias myip="ip -4 addr show \$(ip route show default | awk '/default/ {print \$5}') | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'"
+
+# Exports
+export EDITOR=nvim
+export TERM=xterm-256color
+export PATH="$PATH:$HOME/.npm-global/bin:$HOME/go/bin"
+[ -d "$HOME/.local/bin" ] && export PATH="$HOME/.local/bin:$PATH"
+
+# bat is shipped as batcat on Debian/Ubuntu
+command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1 && alias bat=batcat
