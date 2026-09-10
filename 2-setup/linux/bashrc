@@ -12,6 +12,9 @@ HISTSIZE=5000
 HISTFILESIZE=10000
 shopt -s checkwinsize
 
+# opencode CLI
+export PATH="$HOME/.opencode/bin:$PATH"
+
 # less friendly for non-text input files
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
@@ -24,7 +27,14 @@ alias c='clear'
 alias h='history'
 alias hs='history | grep'
 alias grep='grep --color=auto'
-alias cat='bat'
+if _bat="$(type -P bat 2>/dev/null)"; then
+  _BAT="$_bat"
+elif _bat="$(type -P batcat 2>/dev/null)"; then
+  _BAT="$_bat"   # Debian/Ubuntu ship the bat binary as batcat
+else
+  _BAT=cat
+fi
+alias cat="$_BAT"
 
 # Directory & file
 alias ls='ls --color=auto'
@@ -47,6 +57,7 @@ alias python='python3'
 alias venv='source venv/bin/activate'
 
 # opencode
+export PATH="$HOME/.opencode/bin:$PATH"
 alias oc='opencode'
 
 # Function to show current Git branch
@@ -81,7 +92,7 @@ ff() {
   find . -type f | sed 's|^\./||' | \
     fzf --query="$1" \
         --height=80% --layout=reverse --border \
-        --preview 'bat --style=numbers --color=always {}' \
+        --preview "$_BAT --style=numbers --color=always {}" \
         --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
         --preview-window 'right,60%,border-left,wrap'
 }
@@ -91,7 +102,7 @@ fa() {
   rg --files | \
     fzf --query="$1" \
         --height=80% --layout=reverse --border \
-        --preview 'bat --style=numbers --color=always {}' \
+        --preview "$_BAT --style=numbers --color=always {}" \
         --bind 'ctrl-/:toggle-preview,enter:become(nvim {}),alt-j:down,alt-k:up,alt-n:down,alt-p:up,ctrl-j:preview-down,ctrl-k:preview-up,ctrl-d:preview-half-page-down,ctrl-u:preview-half-page-up,ctrl-f:preview-page-down,ctrl-b:preview-page-up' \
         --preview-window 'right,60%,border-left,wrap'
 }
