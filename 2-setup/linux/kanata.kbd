@@ -2,7 +2,7 @@
 ;; from the `main` branch: vim_scrolling.json + space nav.
 ;; Install:  sudo apt install kanata  (or from GitHub releases)
 ;; Autostart: see Linux Setup.md (systemd user service or .xprofile)
-;; Manual run:  kanata -c ~/dotfiles/kanata.kbd
+;; Manual run:  kanata -c ~/.config/kanata/kanata.kbd
 ;;
 ;; Layout:
 ;;   caps     -> tap Escape, hold for Scroll mode
