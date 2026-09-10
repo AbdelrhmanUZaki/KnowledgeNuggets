@@ -58,6 +58,16 @@ else
   log "Agave Nerd Font installed."
 fi
 
+# --- rtk ------------------------------------------------------------------
+if command -v rtk >/dev/null 2>&1; then
+  log "rtk already installed: $(rtk --version 2>/dev/null || echo rtk)"
+else
+  log "Installing rtk to ~/.local/bin..."
+  curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+  export PATH="$HOME/.local/bin:$PATH"
+  log "rtk installed."
+fi
+
 # --- Snap (Telegram desktop) ----------------------------------------------
 if command -v telegram-desktop >/dev/null 2>&1; then
   log "Telegram already installed."
