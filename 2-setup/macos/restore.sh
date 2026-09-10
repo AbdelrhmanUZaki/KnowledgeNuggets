@@ -10,14 +10,27 @@ BACKUP_DIR="$HOME/.dotfiles-backup-$(date +%Y%m%d-%H%M%S)"
 
 link() {
   local src="$1" dst="$2"
+  local dst_dir rel
 
   if [ -L "$dst" ]; then
-    printf 'skip   %-30s (already a symlink)\n' "$dst"
+    if [ -e "$dst" ]; then
+      printf 'skip   %-30s (already a symlink)\n' "$dst"
+      return
+    fi
+    rm "$dst"
+    printf 'heal   %-30s (was a broken link, re-pointing)\n' "$dst"
   elif [ -e "$dst" ]; then
     mkdir -p "$BACKUP_DIR"
     mv "$dst" "$BACKUP_DIR/"
-    ln -s "$src" "$dst"
     printf 'backup %-30s -> %s\n' "$dst" "$BACKUP_DIR/"
+  fi
+
+  dst_dir="$(dirname "$dst")"
+  mkdir -p "$dst_dir"
+  if command -v realpath >/dev/null 2>&1; then
+    rel="$(realpath --relative-to="$dst_dir" "$src")"
+    ln -s "$rel" "$dst"
+    printf 'linked %-30s [rel] -> %s\n' "$dst" "$rel"
   else
     ln -s "$src" "$dst"
     printf 'linked %-30s -> %s\n' "$dst" "$src"

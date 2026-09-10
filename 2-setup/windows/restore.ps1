@@ -10,9 +10,16 @@ $Backup = Join-Path $HOME (".dotfiles-backup-" + (Get-Date -Format "yyyyMMdd-HHm
 
 function Link-File {
     param([string]$Src, [string]$Dst)
-    $item = Get-Item $Dst -ErrorAction SilentlyContinue
-    if ($item -and $item.Attributes.ToString().Contains("ReparsePoint")) {
-        Write-Host "skip   $Dst (already a symlink)"
+    $item = Get-Item $Dst -Force -ErrorAction SilentlyContinue
+    if ($item -and $item.LinkType -eq "SymbolicLink") {
+        # Resolve target; the link is broken if Get-Item on the target fails
+        $resolved = (Resolve-Path $Dst -ErrorAction SilentlyContinue) -ne $null
+        if ($resolved) {
+            Write-Host "skip   $Dst (already a symlink)"
+        } else {
+            Remove-Item $Dst -Force
+            Write-Host "heal   $Dst (was a broken link, re-pointing)"
+        }
     } elseif ($item) {
         New-Item -ItemType Directory -Force -Path $Backup | Out-Null
         Move-Item $Dst (Join-Path $Backup (Split-Path $Dst -Leaf))
