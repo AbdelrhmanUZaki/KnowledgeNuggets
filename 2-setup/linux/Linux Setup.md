@@ -41,12 +41,39 @@ Reload: `source ~/.bashrc && tmux source-file ~/.tmux.conf`
 
 ## 4. Keyboard (kanata)
 
+`kanata.kbd`: `caps` = tap Esc / hold scroll layer, `space` hold = nav arrows.
+
 ```bash
-sudo apt install kanata        # or grab a release from github.com/jtroo/kanata
-kanata -c ~/.config/kanata/kanata.kbd
+sudo nala install -y kanata        # or a release from github.com/jtroo/kanata
+
+# Give your user write access to /dev/uinput (kanata needs it for the virtual keyboard)
+sudo usermod -aG input $USER       # log out/in afterwards
+printf 'KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="input", MODE="0660"\n' |
+  sudo tee /etc/udev/rules.d/50-kanata.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# Link the config (runs only when kanata is installed) and test
+./linux/restore.sh
+kanata -c ~/.config/kanata/kanata.kbd     # errors land in ~/.log
 ```
 
-Add a normal user systemd unit for autostart (see `linux/kanata.kbd` layout: `caps` = Esc + scroll layer, `space` hold = nav arrows).
+Autostart: add a normal user systemd unit as below, then `systemctl --user enable --now kanata`.
+
+```ini
+# ~/.config/systemd/user/kanata.service
+[Unit]
+Description=Kanata keyboard remapper
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/kanata -c %h/.config/kanata/kanata.kbd
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+If skipping kanata, set Caps → Esc via GNOME settings (see section 5).
 
 ## 5. Manual one-time steps
 
