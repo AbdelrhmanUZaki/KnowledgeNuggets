@@ -83,6 +83,35 @@ Follow [manual-steps.md](../manual-steps.md): browser sync, Bitwarden, `gh auth 
 
 See [networking.md](../networking.md).
 
+## 7. NVIDIA drivers on Ubuntu (HP ZBook / hybrid graphics)
+
+Symptom: random hard freezes or sudden power-offs while working on Linux; Windows is stable.
+
+Likely cause: the open-source `nouveau` driver is loaded for the NVIDIA GPU.
+
+Check:
+
+```bash
+lspci -k | grep -A2 'VGA compatible controller: NVIDIA'
+```
+
+If it shows `Kernel driver in use: nouveau`, install the recommended proprietary driver:
+
+```bash
+sudo apt update
+sudo ubuntu-drivers install
+sudo reboot
+```
+
+Verify after reboot:
+
+```bash
+lspci -k | grep -A2 'VGA compatible controller: NVIDIA'
+# should show: Kernel driver in use: nvidia
+```
+
+If Secure Boot is enabled, enroll the MOK key at the next boot; if it is disabled, no extra step is needed.
+
 ## App overview
 
 - **`nala`** – modern front-end for `apt`
