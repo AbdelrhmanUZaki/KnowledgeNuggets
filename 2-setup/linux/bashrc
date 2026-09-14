@@ -35,7 +35,7 @@ else
   _BAT=cat
 fi
 # alias cat="$_BAT"
-alias c="$_BAT"
+alias b="$_BAT"
 
 # Directory & file
 alias ls='ls --color=auto'
