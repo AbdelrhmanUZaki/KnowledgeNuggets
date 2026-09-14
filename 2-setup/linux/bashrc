@@ -34,7 +34,8 @@ elif _bat="$(type -P batcat 2>/dev/null)"; then
 else
   _BAT=cat
 fi
-alias cat="$_BAT"
+# alias cat="$_BAT"
+alias c="$_BAT"
 
 # Directory & file
 alias ls='ls --color=auto'
