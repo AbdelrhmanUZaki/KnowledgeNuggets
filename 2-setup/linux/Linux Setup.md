@@ -157,7 +157,14 @@ s-tui
 # Press "Stress" and run for a few minutes; the fan should spin and CPU should stay below ~90°C
 ```
 
-If the fan still does not spin, the laptop may need a cooling-pad workaround or a hardware check.
+Also enable `thermald` so it can throttle short temperature spikes before the fan reacts:
+
+```bash
+sudo systemctl enable --now thermald
+```
+
+> **Note:** I am still testing whether both the GRUB edit and `thermald` are required, or if `thermald` alone is enough. For now I keep both active.
+> Optional extra safety: limit CPU max performance to 70% with `echo 70 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct`.
 
 ## App overview
 
