@@ -20,6 +20,8 @@ curl -fsSL https://raw.githubusercontent.com/y3owk1n/neru/main/scripts/install.s
 
 The script prompts for confirmation — write `y` to accept.
 
+> **Not currently in use (2026-09):** neru conflicts with kanata on KDE Wayland — its evdev keyboard proxy grabs the keyboards but its re-emission doesn't reach KWin, killing the keyboard whenever it runs (v1.54.0). Kanata is more important; revisit when neru fixes remapper coexistence on Wayland.
+
 ## 2. Apply dotfiles
 
 ```bash
