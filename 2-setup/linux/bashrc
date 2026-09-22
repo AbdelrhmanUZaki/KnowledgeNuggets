@@ -151,3 +151,6 @@ export PATH="$PATH:$HOME/.npm-global/bin:$HOME/go/bin"
 command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1 && alias bat=batcat
 export PATH="$HOME/.local/bin:$PATH"
 alias ub="ssh zaki@ubuntu-server"
+
+# agent-vm
+source "/home/zaki/github/agent-vm/agent-vm.sh"

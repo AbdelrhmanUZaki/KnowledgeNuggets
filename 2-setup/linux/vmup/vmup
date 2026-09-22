@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# vmup — create/start this project's agent-vm with a deterministic SSH port
+# and a matching ~/.ssh/config alias for ZCode's Remote Connection (SSH).
+#
+# Usage:   cd <project-dir> && vmup
+#
+# The port is derived from the same path-hash agent-vm uses to name the VM,
+# so it is stable across reboots AND across VM re-creation (rm/--reset):
+# same project directory always maps to the same port.
+#
+# Idempotent: safe to run again in an already-set-up project (no-op start).
+#
+# Docs: see README.md next to this script.
+
+set -euo pipefail
+
+PORT_BASE=46000
+PORT_SPAN=1000
+KEY="$HOME/.lima/_config/user"
+VM_USER="${USER:-$(id -un)}"
+
+fail() { echo "vmup: $*" >&2; exit 1; }
+
+command -v agent-vm >/dev/null 2>&1 || fail "agent-vm not found on PATH"
+command -v limactl  >/dev/null 2>&1 || fail "limactl not found on PATH"
+
+dir="$(pwd)"
+vm="$(agent-vm name)" || fail "could not compute VM name for $dir"
+hash8="${vm##*-}"
+alias_name="vm-$(basename "$dir" | tr -cs 'a-zA-Z0-9-' '-' | sed 's/^-*//;s/-*$//')"
+[ -n "$alias_name" ] && [ "$alias_name" != "vm-" ] || fail "cannot derive alias from $dir"
+
+exists()  { limactl list -q 2>/dev/null | grep -qx "$vm"; }
+running() { limactl list --format '{{.Name}} {{.Status}}' 2>/dev/null | grep -qx "$vm Running"; }
+pinned()  { grep -q 'localPort' "$HOME/.lima/$vm/lima.yaml" 2>/dev/null; }
+port_busy() { ss -ltnH "sport = :$1" 2>/dev/null | grep -q .; }
+
+# Deterministic starting point from the project hash, nudged off any port
+# already pinned by another agent-vm VM or already listening on the host.
+pick_port() {
+  local p=$(( PORT_BASE + (16#$hash8 % PORT_SPAN) )) f
+  while port_busy "$p" || {
+    for f in "$HOME"/.lima/*/lima.yaml; do
+      [ -f "$f" ] || continue
+      [ "$f" = "$HOME/.lima/$vm/lima.yaml" ] && continue
+      grep -qE "^[[:space:]]*localPort:[[:space:]]*${p}\$" "$f" && return 0
+    done
+    false
+  }; do
+    p=$(( (p - PORT_BASE + 1) % PORT_SPAN + PORT_BASE ))
+  done
+  echo "$p"
+}
+
+pin_port() {
+  local p; p="$(pick_port)"
+  limactl edit "$vm" --set ".ssh.localPort = $p" >/dev/null \
+    || fail "limactl edit could not pin the SSH port"
+}
+
+# Run an agent-vm command quietly; on failure, replay its output loudly.
+run_avm() {
+  local out
+  out="$(agent-vm "$@" 2>&1)" || { printf '%s\n' "$out" >&2; return 1; }
+}
+
+if ! exists "$vm"; then
+  echo "==> Creating VM '$vm' for $dir (clones the base; first time only)"
+  run_avm shell -c true || fail "agent-vm could not create/start the VM"
+  echo "==> Pinning SSH port"
+  run_avm stop
+  pin_port
+  run_avm shell -c true
+elif ! running "$vm"; then
+  pinned || { echo "==> Pinning SSH port"; pin_port; }
+  run_avm shell -c true || fail "could not start the VM"
+elif ! pinned; then
+  echo "==> VM running without a pinned port; restarting once to pin it"
+  run_avm stop
+  pin_port
+  run_avm shell -c true
+fi
+
+# Read the port back from the instance config — the source of truth.
+port="$(sed -n 's/^[[:space:]]*localPort:[[:space:]]*\([0-9]\{1,5\}\).*/\1/p' \
+        "$HOME/.lima/$vm/lima.yaml" | tail -1)"
+[ -n "$port" ] || fail "could not read back the pinned port from $vm/lima.yaml"
+
+# Maintain one managed block per alias in ~/.ssh/config (replaces stale ports).
+conf="$HOME/.ssh/config"
+mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+touch "$conf"
+begin="# BEGIN agent-vm alias: $alias_name"
+end="# END agent-vm alias: $alias_name"
+sed -i "/^${begin}\$/,/^${end}\$/d" "$conf"
+cat >> "$conf" <<EOF
+
+$begin
+Host $alias_name
+  HostName 127.0.0.1
+  Port $port
+  User $VM_USER
+  IdentityFile $KEY
+  IdentitiesOnly yes
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+  ServerAliveInterval 30
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  ControlPersist 10m
+$end
+EOF
+
+echo
+echo "VM:      $vm  (running)"
+echo "SSH:     ssh $alias_name"
+echo "         ($VM_USER@127.0.0.1:$port, key $KEY)"
+echo "ZCode:   Projects '+' → Remote Connection → SSH → alias '$alias_name'"
+echo "         (the alias auto-fills host/port/user/key)"
+echo "Stop:    agent-vm stop   (port stays pinned for next time)"

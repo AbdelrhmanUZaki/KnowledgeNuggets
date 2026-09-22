@@ -168,6 +168,22 @@ sudo systemctl enable --now thermald
 > **Note:** I am still testing whether both the GRUB edit and `thermald` are required, or if `thermald` alone is enough. For now I keep both active.
 > Optional extra safety: limit CPU max performance to 70% with `echo 70 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct`.
 
+## 9. AI-agent sandbox VMs (agent-vm + vmup + ZCode Remote SSH)
+
+Every project gets its own isolated Debian VM (own kernel, docker inside), and
+the ZCode GUI connects to it over SSH while staying on the host — see
+[`vmup/README.md`](vmup/README.md) for the full context, security model, and
+troubleshooting (including the Lima nerdctl download fix).
+
+```bash
+# Prerequisites (once): limactl, agent-vm, and the base VM — see vmup/README.md
+cd ~/github/<project>
+vmup          # create/start the VM, pin its SSH port, refresh the ssh alias
+# ZCode: Projects '+' → Remote Connection → SSH → alias 'vm-<project>'
+```
+
+`restore.sh` links `vmup` into `~/.local/bin` automatically.
+
 ## App overview
 
 - **`nala`** – modern front-end for `apt`

@@ -49,6 +49,11 @@ else
 fi
 
 echo
+echo "== tools =="
+mkdir -p "$HOME/.local/bin"
+link "$LINUX/vmup/vmup" "$HOME/.local/bin/vmup"
+
+echo
 echo "== shared configs =="
 link "$SHARED/nvim"                 "$HOME/.config/nvim"
 link "$SHARED/opencode"             "$HOME/.config/opencode"
