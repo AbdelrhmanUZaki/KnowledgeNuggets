@@ -41,8 +41,12 @@ Copies/symlinks into `$HOME` (backs up existing files first):
 | `../shared/codex` | `~/.config/codex` |
 | `../shared/gemini` | `~/.gemini` |
 | `../shared/agents` | `~/.agents` |
+| `../shared/zcode/AGENTS.md` | `~/.zcode/AGENTS.md` |
+| `../shared/zcode/cli/config.json` | `~/.zcode/cli/config.json` |
 
 Reload: `source ~/.bashrc && tmux source-file ~/.tmux.conf`
+
+> **zcode:** only the CLI global config is synced (rtk instructions + rtk PreToolUse hook). Everything else in `~/.zcode` is machine-local state and stays out of the repo: `v2/` desktop settings/credentials, `cli/agents/` session dirs, `cli/plugins/` cache. Plugin marketplaces are re-added manually (`/plugin marketplace add ...`).
 
 ## 3. nvim
 

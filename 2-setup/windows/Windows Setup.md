@@ -29,6 +29,8 @@ Copies/symlinks into your profile (backs up existing files first):
 | `../shared/codex` | `~\.codex` |
 | `../shared/gemini` | `~\.gemini` |
 | `../shared/agents` | `~\.agents` |
+| `../shared/zcode/AGENTS.md` | `~\.zcode\AGENTS.md` |
+| `../shared/zcode/cli/config.json` | `~\.zcode\cli\config.json` |
 
 Note: `restore.ps1` symlinks via PowerShell (needs the symlink link permission — run once from an **elevated** prompt if it fails).
 

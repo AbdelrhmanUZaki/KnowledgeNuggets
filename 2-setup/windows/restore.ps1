@@ -49,5 +49,8 @@ Link-File (Join-Path $Shared "opencode")   "$HOME\.config\opencode"
 Link-File (Join-Path $Shared "codex")      "$HOME\.codex"
 Link-File (Join-Path $Shared "gemini")     "$HOME\.gemini"
 Link-File (Join-Path $Shared "agents")     "$HOME\.agents"
+New-Item -ItemType Directory -Force -Path "$HOME\.zcode\cli" | Out-Null
+Link-File (Join-Path $Shared "zcode\AGENTS.md")       "$HOME\.zcode\AGENTS.md"
+Link-File (Join-Path $Shared "zcode\cli\config.json") "$HOME\.zcode\cli\config.json"
 
 Write-Host "`nDone."

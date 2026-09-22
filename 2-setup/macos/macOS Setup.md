@@ -38,6 +38,8 @@ Copies/symlinks into `$HOME` (backs up existing files first):
 | `../shared/codex` | `~/.codex` |
 | `../shared/gemini` | `~/.gemini` |
 | `../shared/agents` | `~/.agents` |
+| `../shared/zcode/AGENTS.md` | `~/.zcode/AGENTS.md` |
+| `../shared/zcode/cli/config.json` | `~/.zcode/cli/config.json` |
 
 Reload: `source ~/.bashrc`
 

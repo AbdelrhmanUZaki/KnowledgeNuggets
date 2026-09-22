@@ -56,6 +56,9 @@ link "$SHARED/opencode"  "$HOME/.config/opencode"
 link "$SHARED/codex"     "$HOME/.codex"
 link "$SHARED/gemini"    "$HOME/.gemini"
 link "$SHARED/agents"    "$HOME/.agents"
+mkdir -p "$HOME/.zcode/cli"
+link "$SHARED/zcode/AGENTS.md"       "$HOME/.zcode/AGENTS.md"
+link "$SHARED/zcode/cli/config.json" "$HOME/.zcode/cli/config.json"
 
 echo
 echo "note   kanata LaunchDaemon is per-user: edit macOS/launchdaemons/io.dreamsofcode.kanata.plist"
