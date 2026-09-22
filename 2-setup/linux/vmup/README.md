@@ -89,6 +89,21 @@ Daily commands:
 | `agent-vm --readonly shell` | session with the project dir mounted read-only |
 | `agent-vm --offline shell` | session with VM networking cut off |
 
+## After a reboot
+
+VMs never auto-start on boot, on purpose: a running VM holds its RAM
+(3 GiB default) and CPUs whether you use it or not, and you rarely want
+*all* project VMs up at once. Starting is on demand, one command:
+
+```bash
+cd ~/github/<project> && vmup   # starts the VM (alias/port verified too)
+# or: agent-vm shell            # same, plus drops you into a VM shell
+```
+
+Then in ZCode: click the **refresh button beside the folder name** in the
+sidebar to reconnect the workspace. (Want one project always up? A systemd
+`--user` unit running `limactl start <vm>` does it — opt-in only.)
+
 ## How the "fixed port" works
 
 - agent-vm names each VM `agent-vm-<basename>-<first 8 hex of
