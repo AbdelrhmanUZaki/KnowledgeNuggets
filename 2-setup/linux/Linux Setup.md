@@ -90,6 +90,35 @@ WantedBy=default.target
 
 If skipping kanata, set Caps → Esc via GNOME settings (see section 5).
 
+### KDE window tiling (Krohnkite)
+
+```bash
+./linux/kde-tiling.sh   # then log out/in once — KWin reads shortcuts at login
+```
+
+Installs the maintained Plasma 6 fork (Codeberg — krohnkite.com still points at
+the abandoned Plasma 5 repo), enables it, and applies the key scheme:
+
+- `Alt+1..9, Alt+0` -> switch to virtual desktop 1..10
+- `Alt+H/J/K/L` focus, `Alt+Shift+H/J/K/L` move window, `Alt+Ctrl+H/J/K/L` resize
+- `Alt+Return` open Konsole, `Alt+Shift+Return` set master, `Alt+F` float,
+  `Alt+T` tile / `Alt+M` monocle, `Alt+\` next layout
+- `lv3:ralt_alt` in `kxkbrc`: right Alt acts as plain Alt — both Alts trigger
+  everything above; costs the AltGr special characters on the `eg` layout
+
+Gotchas:
+
+- KWin reads `kglobalshortcutsrc` only at login — live edits and `kwin
+  reconfigure` do NOT hot-apply shortcut changes.
+- Don't toggle Krohnkite on/off at runtime: reload cycles crash apps. It loads
+  once at login. Also avoid the kglobalaccel DBus query methods
+  (`actionList` / `globalShortcutsByKey`) on this Plasma 6.6 build — they
+  abort `kwin_wayland`; use the Shortcuts GUI or `kde-tiling.sh` instead.
+- Plain Plasma workspace navigation stays available: `Meta+Ctrl+Left/Right`,
+  Overview `Meta+W`, Grid `Meta+G`.
+- On the `eg` layout the number row emits Arabic-Indic digits, so `Alt+digit`
+  desktop switching needs the EN layout active.
+
 ## 5. Manual one-time steps
 
 Follow [manual-steps.md](../manual-steps.md): browser sync, Bitwarden, `gh auth login`, WhatsApp/Telegram QR, VS Code, Caps → Esc (only if not using kanata).
