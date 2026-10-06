@@ -42,6 +42,8 @@ kanata -c ~\AppData\Roaming\kanata\kanata.kbd
 
 Autostart: press `Win+R`, `shell:startup`, drop a shortcut to `kanata -c <config>` (see `windows/kanata.kbd` layout: Esc → backtick, caps = Esc + scroll layer, space hold = nav arrows).
 
+> **Use the GUI build on this machine** (2026-10): `kanata_windows_gui_winIOv2_x64.exe` hooks fine; the tty build starts cleanly but never intercepts any keys. Always pass `-c` explicitly — launched without it, kanata silently loads whatever `kanata.kbd` sits next to the exe, which is how a stale `Downloads\windows-binaries-x64` config ran as a duplicate instance and caused the "Unexpected keycode / Clearing kanata states" fights.
+
 ## 4. Terminal
 
 Windows Terminal reads `windows/windows-terminal.json` — one "One Half Dark" scheme, Vim-friendly split/focus keys. Default profile = PowerShell 7.
