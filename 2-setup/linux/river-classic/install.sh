@@ -131,15 +131,31 @@ EOF
   systemctl --user mask waybar.service >/dev/null 2>&1 || true
 }
 
+install_rules() {
+  local rule="$HERE/udev/70-river-classic-input.rules"
+  [ -f "$rule" ] || { warn "missing $rule"; return; }
+
+  log "installing touchpad gesture udev rule (sudo)"
+  sudo install -m 0644 "$rule" /etc/udev/rules.d/70-river-classic-input.rules
+  echo uinput | sudo tee /etc/modules-load.d/river-classic-uinput.conf >/dev/null
+  sudo modprobe uinput 2>/dev/null || true
+  sudo udevadm control --reload
+  sudo udevadm trigger --subsystem-match=input
+  sudo udevadm trigger --sysname-match=uinput 2>/dev/null || true
+  log "udev rule active — a reboot is the fallback if /dev/uinput is still root-only"
+}
+
 case "${1:-all}" in
   deps)    install_pkgs "${APT_PACKAGES[@]}" "${BUILD_PACKAGES[@]}" ;;
   build)   build_compositor ;;
   session) install_session ;;
+  rules)   install_rules ;;
   config)  "$HERE/restore.sh" ;;
   all)
     install_pkgs "${APT_PACKAGES[@]}" "${BUILD_PACKAGES[@]}"
     build_compositor
     install_session
+    install_rules
     "$HERE/restore.sh"
     cat <<EOF
 
@@ -150,5 +166,5 @@ $(log "done — now:")
 
 EOF
     ;;
-  *) die "unknown phase: $1 (use deps|build|session|config|all)" ;;
+  *) die "unknown phase: $1 (use deps|build|session|rules|config|all)" ;;
 esac

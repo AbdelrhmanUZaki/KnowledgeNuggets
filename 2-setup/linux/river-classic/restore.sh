@@ -41,8 +41,8 @@ if [ ! -f "$HOME/.local/share/wallpapers/river-classic.jpg" ]; then
   echo "copy   wallpaper -> ~/.local/share/wallpapers/river-classic.jpg"
 fi
 
-# the init is executed by river — it must be executable
-chmod +x "$HERE/config/river/init" "$HERE/config/river/"*.sh "$HERE/config/river/system-panel.py" 2>/dev/null || true
+# the init is executed by river and the gesture daemon is spawned from it
+chmod +x "$HERE/config/river/init" "$HERE/config/river/"*.sh "$HERE/config/river/"*.py 2>/dev/null || true
 
 echo
 echo "Done. Log out and pick 'river-classic' in the GDM gear menu."

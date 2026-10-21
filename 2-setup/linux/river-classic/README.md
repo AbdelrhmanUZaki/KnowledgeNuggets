@@ -23,7 +23,7 @@ cd 2-setup/linux/river-classic
 
 Then **log out** of GNOME and pick **river-classic** in the gear menu.
 
-Phases can be run separately: `./install.sh deps | build | session | config`.
+Phases can be run separately: `./install.sh deps | build | session | rules | config`.
 
 Re-apply the config at any time (this is what `2-setup/linux/restore.sh` calls):
 
@@ -72,6 +72,7 @@ Quick Settings; the back button sits in the header.
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
 | `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt |
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
+| `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, 3-finger press = right |
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
@@ -129,6 +130,17 @@ Tags are on **Alt** (dwm muscle memory), not Super.
   `nmcli device wifi rescan` in the background.
 - **libinput preferences can't be set from udev** (those `LIBINPUT_*` properties are
   hardware quirks). Use `riverctl input` — see the touchpad block in `config/river/init`.
+- **`click-method none` does not stop physical buttons.** libinput still forwards
+  the clickpad's BTN_LEFT, so a daemon that "replaces" clicks would double every
+  press. `gestures.py` mirrors the pad through a non-clickpad uinput clone instead;
+  libinput ignores non-left buttons only on *clickpads*, so the clone can carry the
+  translated left/right button.
+- **`/dev/uinput` is not covered by logind's uaccess ACL** (it is `misc`, not
+  `input`). The gesture daemon needs the udev rule in `udev/`; without it it exits
+  cleanly after logging the fix, leaving the stock touchpad untouched.
+- **A grabbed evdev fd is released by the kernel when the process dies.** That is
+  why `gestures.py` can never leave a dead touchpad: worst case river goes back to
+  the physical pad with stock clickfinger.
 - **A GtkBox has no "box" style class** — `.box.panel` never matches; use `.panel`.
 - **dash needs `; }`** to close a one-line function body (`f() { echo hi }` is a
   syntax error that swallows the rest of the file).
@@ -148,7 +160,28 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   right click), clickfinger, natural scrolling, palm rejection, tap-and-drag, and a
   scroll factor of your choice — the touchpad only, so any external mouse keeps its
   normal wheel direction and rate. Tune the speed live with
-  `~/.config/river/scroll-speed.sh <factor>` (1.0 = stock, 0.4 = current).
+  `~/.config/river/scroll-speed.sh <factor>` (1.0 = stock, 0.3 = current).
+- **Touchpad gestures** (`config/river/gestures.py`):
+  3-finger tap = back, 4-finger tap = forward, 3-finger swipe up/down = volume,
+  and physical clicks map 1 finger = left, 2 or 3 fingers = right. The daemon
+  mirrors the pad through uinput so libinput keeps doing acceleration, palm
+  rejection, DWT, tap-to-click, 2-finger scrolling and tap-and-drag.
+  One documented side effect: libinput still emits its own **middle click on a
+  3-finger tap** (plus the back action); 1/2-finger taps are untouched.
+  Install the udev rule once (the daemon is already spawned by `init`):
+  ```sh
+  sudo install -m 0644 udev/70-river-classic-input.rules /etc/udev/rules.d/
+  echo uinput | sudo tee /etc/modules-load.d/river-classic-uinput.conf
+  sudo modprobe uinput
+  sudo udevadm control --reload
+  sudo udevadm trigger --subsystem-match=input
+  sudo udevadm trigger --sysname-match=uinput
+  ```
+  Then log out/in (or just wait — `init` respawns the daemon every 2 s). Check
+  `~/.local/state/river-classic/gestures.log` and `riverctl list-inputs`
+  (a second `...Touchpad` device appears while the mirror is active).
+  `python3 ~/.config/river/gestures.py --selftest` runs the engine tests without
+  hardware; `--off` restores stock clickfinger if an old daemon was interrupted.
 - The `Z`-icon in the tray is the ZCode editor registering a tray item.
 - Everything is hot-editable: `riverctl map ...` for keybinds, the CSS for the bar,
   the Python for the panel — no recompile, no relogin.

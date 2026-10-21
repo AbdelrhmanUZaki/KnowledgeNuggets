@@ -6,6 +6,10 @@
 # GDM does NOT source ~/.profile — make our ~/.local/bin tools visible!
 export PATH="$HOME/.local/bin:$PATH"
 
+# river runs this file through `sh -c`; the shell's parent is the compositor.
+# gestures.py uses it to stop (and release the touchpad grab) when river exits.
+RIVER_PID=$PPID
+
 # publish session env to dbus + user systemd, so dbus-activated services (portals!)
 # don't die of activation timeouts under non-GNOME compositors (GNOME does this for
 # you; river-classic doesn't!)
@@ -69,14 +73,14 @@ riverctl map normal Super Comma focus-output previous
 riverctl map normal Super+Shift Period send-to-output next
 riverctl map normal Super+Shift Comma send-to-output previous
 
-# ---- volume (pactl, like the old dwm 'sound' script) ---------------------------
+# ---- volume (PipeWire — pactl is not installed) --------------------------------
 for mode in normal locked
 do
-    riverctl map $mode None XF86AudioRaiseVolume spawn 'pactl set-sink-volume @DEFAULT_SINK@ +5%'
-    riverctl map $mode None XF86AudioLowerVolume spawn 'pactl set-sink-volume @DEFAULT_SINK@ -5%'
-    riverctl map $mode None XF86AudioMute        spawn 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
-    riverctl map $mode None XF86MonBrightnessUp   spawn 'brightnessctl set +5%'
-    riverctl map $mode None XF86MonBrightnessDown spawn 'brightnessctl set 5%-'
+    riverctl map $mode None XF86AudioRaiseVolume spawn 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+'
+    riverctl map $mode None XF86AudioLowerVolume spawn 'wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-'
+    riverctl map $mode None XF86AudioMute        spawn 'wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle'
+    riverctl map $mode None XF86MonBrightnessUp   spawn "$HOME/.config/waybar/brightness.sh up"
+    riverctl map $mode None XF86MonBrightnessDown spawn "$HOME/.config/waybar/brightness.sh down"
 done
 
 # ---- media keys / screenshots / notifications (GNOME conventions) -------------
@@ -142,7 +146,28 @@ riverctl input '*Touchpad' drag enabled
 # scroll speed: the factor multiplies the scroll delta (1.0 = stock, 0.5 = half,
 # 3 = 3x faster). Touchpad only — a wheel mouse keeps its own rate. Live tuning
 # without a relogin: ~/.config/river/scroll-speed.sh <factor>
-riverctl input '*Touchpad' scroll-factor 0.4
+riverctl input '*Touchpad' scroll-factor 0.3
+
+# ---- multi-finger touchpad gestures --------------------------------------------
+# 3-finger tap = back, 4-finger tap = forward, 3-finger swipe up/down = volume.
+# The daemon mirrors the pad through a non-clickpad uinput clone, which lets it
+# map 1-finger press = left and 2/3-finger press = right (libinput's clickfinger
+# has 3 fingers hard-coded to middle and river cannot remap it). The physical
+# pad is EVIOCGRABbed only after river adopts the clone; on any exit the grab is
+# released by the kernel, so stock clickfinger behaviour always comes back.
+# Needs udev/70-river-classic-input.rules (see README) or it exits with code 3.
+GESTURES_LOG="$STATE_DIR/gestures.log"
+( while :; do
+      "$HOME/.config/river/gestures.py" --parent "$RIVER_PID"
+      rc=$?
+      if [ "$rc" -eq 3 ]; then
+          exit 0                       # missing permission/uinput -> no point looping
+      elif [ "$rc" -eq 4 ]; then
+          sleep 5                      # no touchpad (yet) -> wait for it
+      else
+          sleep 2
+      fi
+  done ) >>"$GESTURES_LOG" 2>&1 &
 
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300

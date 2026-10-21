@@ -1,0 +1,25 @@
+# river-classic: multi-finger touchpad gestures
+#
+# config/river/gestures.py needs to
+#   1. read the raw touchpad event node (tap/swipe detection, EVIOCGRAB)
+#   2. write /dev/uinput (it mirrors the pad as a non-clickpad touchpad and
+#      injects back/forward buttons)
+#
+# The session user is in "plugdev", so grant that group access.  logind's
+# uaccess ACL only covers the active seat and is not applied to /dev/uinput.
+#
+# Install:
+#   sudo install -m 0644 70-river-classic-input.rules /etc/udev/rules.d/
+#   echo uinput | sudo tee /etc/modules-load.d/river-classic-uinput.conf
+#   sudo modprobe uinput
+#   sudo udevadm control --reload
+#   sudo udevadm trigger --subsystem-match=input
+#   sudo udevadm trigger --sysname-match=uinput
+#
+# A reboot (or unplug/replug for an external touchpad) is the fallback.
+
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event[0-9]*", \
+    ENV{ID_INPUT_TOUCHPAD}=="1", GROUP="plugdev", MODE="0660"
+
+KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="plugdev", MODE="0660", \
+    OPTIONS+="static_node=uinput"
