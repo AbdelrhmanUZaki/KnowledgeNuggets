@@ -144,8 +144,9 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 
 - The bar renders on **every** output; the panel docks to the monitor under the pointer.
 - **Touchpad = GNOME parity** (`config/river/init`): tap-to-click (2-finger tap =
-  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag — the
-  touchpad only; any external mouse keeps its normal wheel direction.
+  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag, and
+  `scroll-factor 0.7` (70% scroll speed) — the touchpad only; any external mouse
+  keeps its normal wheel direction and rate.
 - The `Z`-icon in the tray is the ZCode editor registering a tray item.
 - Everything is hot-editable: `riverctl map ...` for keybinds, the CSS for the bar,
   the Python for the panel — no recompile, no relogin.
