@@ -72,6 +72,7 @@ Quick Settings; the back button sits in the header.
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
 | `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt |
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
+| `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
@@ -144,9 +145,10 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 
 - The bar renders on **every** output; the panel docks to the monitor under the pointer.
 - **Touchpad = GNOME parity** (`config/river/init`): tap-to-click (2-finger tap =
-  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag, and
-  `scroll-factor 0.7` (70% scroll speed) — the touchpad only; any external mouse
-  keeps its normal wheel direction and rate.
+  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag, and a
+  scroll factor of your choice — the touchpad only, so any external mouse keeps its
+  normal wheel direction and rate. Tune the speed live with
+  `~/.config/river/scroll-speed.sh <factor>` (1.0 = stock, 0.4 = current).
 - The `Z`-icon in the tray is the ZCode editor registering a tray item.
 - Everything is hot-editable: `riverctl map ...` for keybinds, the CSS for the bar,
   the Python for the panel — no recompile, no relogin.

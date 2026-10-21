@@ -139,9 +139,10 @@ riverctl input '*Touchpad' click-method clickfinger           # physical: 2 fing
 riverctl input '*Touchpad' natural-scroll enabled
 riverctl input '*Touchpad' disable-while-typing enabled
 riverctl input '*Touchpad' drag enabled
-# 0.7 = 70% scroll speed (the factor multiplies the scroll delta; 0.5 = half
-# speed, 3 = 3x faster). Touchpad only — a wheel mouse keeps its own rate.
-riverctl input '*Touchpad' scroll-factor 0.7
+# scroll speed: the factor multiplies the scroll delta (1.0 = stock, 0.5 = half,
+# 3 = 3x faster). Touchpad only — a wheel mouse keeps its own rate. Live tuning
+# without a relogin: ~/.config/river/scroll-speed.sh <factor>
+riverctl input '*Touchpad' scroll-factor 0.4
 
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300
