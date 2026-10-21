@@ -10,8 +10,12 @@ dev=$(nmcli -t -f DEVICE,TYPE device status 2>/dev/null | awk -F: '$2=="wifi"{pr
 
 menu() {
     nmcli radio wifi | grep -q enabled || { nmcli radio wifi on 2>/dev/null; sleep 2; }
-    list=$(nmcli -t -f IN-USE,SSID,SIGNAL device wifi list ifname $dev 2>/dev/null)
-    [ -n "$list" ] || list=$(nmcli -t -f IN-USE,SSID,SIGNAL device wifi list ifname $dev 2>/dev/null)
+    # kick a scan but read the cache: a live rescan blocks for ~8 s, which
+    # would leave fuzzel empty for that long. Fall back to a blocking list
+    # only when the cache is empty (fresh login).
+    nmcli device wifi rescan >/dev/null 2>&1
+    list=$(nmcli -t -f IN-USE,SSID,SIGNAL device wifi list ifname "$dev" --rescan no 2>/dev/null)
+    [ -n "$list" ] || list=$(nmcli -t -f IN-USE,SSID,SIGNAL device wifi list ifname "$dev" 2>/dev/null)
     printf '🔗  manage connections…\n'
     printf '%s\n' "$list" | awk -F: '$2!="" {
         mark = ($1=="*") ? "✓ " : "  "

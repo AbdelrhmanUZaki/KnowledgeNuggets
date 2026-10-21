@@ -128,6 +128,18 @@ WALLPAPER="${RIVER_WALLPAPER:-}"
 # command -v nm-applet      >/dev/null 2>&1 && nm-applet      &
 # command -v blueman-applet >/dev/null 2>&1 && blueman-applet &
 
+# ---- touchpad (GNOME parity) ---------------------------------------------------
+# river applies libinput defaults, which differ from the GNOME session the user
+# is used to: tap-to-click off (so right click needs a hard press) and natural
+# scroll off. Configure the touchpad only — external mice keep their wheel
+# direction. The glob is limited to first/last characters by river.
+riverctl input '*Touchpad' tap enabled
+riverctl input '*Touchpad' tap-button-map left-right-middle   # 2-finger tap = right
+riverctl input '*Touchpad' click-method clickfinger           # physical: 2 fingers = right
+riverctl input '*Touchpad' natural-scroll enabled
+riverctl input '*Touchpad' disable-while-typing enabled
+riverctl input '*Touchpad' drag enabled
+
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300
 riverctl default-layout rivertile

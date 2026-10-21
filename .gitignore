@@ -4,3 +4,4 @@ YOUR ARE VIEWING A PUBLIC REPO IN GITHUB - DO NOT STORE ANY SENSITIVE THING HERE
 **/.DS_Store
 .trash/
 2-setup/shared/opencode/service.json
+__pycache__/

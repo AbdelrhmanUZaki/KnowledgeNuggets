@@ -43,6 +43,9 @@ Because the config is symlinked, **edits in this repo are live immediately** —
 Modelled on GNOME's top bar: status indicators on the right, one grouped surface
 (Quick Settings) for everything you can *change*, clock in the middle, workspaces on
 the left. Nothing is duplicated, and nothing is a one-off scattered menu.
+The Wi-Fi and Bluetooth tiles each carry a small **corner chevron** that expands the
+panel into a list page — available networks / paired devices — exactly like GNOME's
+Quick Settings; the back button sits in the header.
 
 ```
 ┌ 1 2 3 4 5 6 7 8 9   window title          Wed 21 Oct  16:29      🔊 ☀ ⇅ ᛒ 🔋 ⏻
@@ -116,6 +119,15 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 - **GTK3 CSS has no `::after`/content** — waybar exits instantly on an invalid
   selector. Themed buttons and sliders also paint their own background over your CSS:
   add `background-image: none` (and `relief NONE` for buttons).
+- **`show_all()` is a no-op on a widget with `no_show_all`** — widgets kept out of the
+  initial reveal (the panel's back button) and rows added *after* `show_all()` need an
+  explicit `show()`. `Gtk.ListBoxRow` also has no `activated` signal: listen to
+  `row-activated` on the `Gtk.ListBox`.
+- **Never use a bare `nmcli device wifi list` in UI code** — it implicitly rescans and
+  blocks ~8 s (the panel looked frozen). Read the cache with `--rescan no` and kick
+  `nmcli device wifi rescan` in the background.
+- **libinput preferences can't be set from udev** (those `LIBINPUT_*` properties are
+  hardware quirks). Use `riverctl input` — see the touchpad block in `config/river/init`.
 - **A GtkBox has no "box" style class** — `.box.panel` never matches; use `.panel`.
 - **dash needs `; }`** to close a one-line function body (`f() { echo hi }` is a
   syntax error that swallows the rest of the file).
@@ -131,6 +143,9 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 ## Notes
 
 - The bar renders on **every** output; the panel docks to the monitor under the pointer.
+- **Touchpad = GNOME parity** (`config/river/init`): tap-to-click (2-finger tap =
+  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag — the
+  touchpad only; any external mouse keeps its normal wheel direction.
 - The `Z`-icon in the tray is the ZCode editor registering a tray item.
 - Everything is hot-editable: `riverctl map ...` for keybinds, the CSS for the bar,
   the Python for the panel — no recompile, no relogin.
