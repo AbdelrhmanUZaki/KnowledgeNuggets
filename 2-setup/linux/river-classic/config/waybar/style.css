@@ -1,0 +1,133 @@
+/* waybar — GNOME-class top bar for river-classic
+ *
+ * Design language
+ *   · one flat surface, no floating chips — a single continuous bar
+ *   · monochrome FontAwesome icons; colour is semantic only
+ *       cyan  = workspace has windows      amber = charger / DND
+ *       red   = critical / urgent          dim   = inactive state
+ *   · state lives in the bar, actions live in the System Menu
+ */
+
+* {
+    border: none;
+    font-family: "Ubuntu Sans", "Noto Sans", "DejaVu Sans", sans-serif;
+    font-size: 13px;
+    font-weight: normal;
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+window#waybar {
+    background-color: #002b36;              /* solarized base03, solid */
+    color: #93a1a1;                          /* base0 — neutral */
+    border-bottom: 1px solid #073642;        /* quiet separation line */
+}
+
+/* ── left: workspaces (dwm tags) ───────────────────────────────── */
+#tags {
+    margin: 0 2px 0 6px;
+}
+
+#tags button {
+    padding: 0 8px;
+    margin: 0 2px;
+    border-radius: 5px;
+    color: #586e75;                          /* empty tag recedes */
+    background: transparent;
+    font-size: 12px;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+#tags button.occupied {
+    color: #2aa198;                          /* has windows */
+    background: rgba(42, 161, 152, 0.14);
+}
+
+#tags button.urgent {
+    color: #dc322f;
+    background: rgba(220, 50, 47, 0.18);
+}
+
+#tags button.focused {
+    color: #002b36;                          /* active: light chip, dark text */
+    background: #eee8d5;
+    font-weight: bold;
+}
+
+#tags button:hover:not(.focused) {
+    background: #073642;
+    color: #fdf6e3;
+}
+
+/* ── left: focused application title ───────────────────────────── */
+#window {
+    color: #586e75;
+    font-size: 12px;
+    margin: 0 10px;
+}
+
+/* ── centre: clock ─────────────────────────────────────────────── */
+#clock {
+    color: #fdf6e3;
+    margin: 0 10px;
+}
+
+/* ── right: system cluster ─────────────────────────────────────── */
+#mpris,
+#pulseaudio,
+#backlight,
+#network,
+#bluetooth,
+#battery,
+#custom-notify,
+#custom-power,
+#tray {
+    padding: 0 7px;
+    margin: 0 1px;
+    border-radius: 6px;
+    color: #93a1a1;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+#mpris {
+    color: #657b83;                          /* media is secondary */
+}
+
+/* breathing room at the screen corner */
+#custom-power {
+    margin-right: 10px;
+}
+
+#mpris:hover,
+#pulseaudio:hover,
+#backlight:hover,
+#network:hover,
+#bluetooth:hover,
+#battery:hover,
+#custom-notify:hover,
+#custom-power:hover,
+#tray:hover {
+    background: #073642;
+    color: #fdf6e3;
+}
+
+/* ── state colours ─────────────────────────────────────────────── */
+#pulseaudio.muted { color: #586e75; }
+#network.disconnected { color: #586e75; }
+#bluetooth.disabled,
+#bluetooth.off { color: #586e75; }
+
+#battery.warning:not(.charging) { color: #b58900; }
+#battery.critical:not(.charging) {
+    color: #dc322f;
+    animation: blink 1.2s steps(2, start) infinite alternate;
+}
+#battery.charging,
+#battery.plugged { color: #b58900; }
+
+#custom-notify.dnd-on { color: #b58900; }
+
+@keyframes blink {
+    to { color: #b58900; }
+}

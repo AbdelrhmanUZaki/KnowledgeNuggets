@@ -9,6 +9,7 @@ This is a collection of **quick, reference-ready tech notes**.
 ## Index
 
 - ### [Setup & Tools](2-setup/Setup%20&%20Tools.md)
+- ### [river-classic — Wayland session](2-setup/linux/river-classic/README.md) (dynamic tiling, dwm tags, GNOME-class panel)
 - ### [Courses](1-notes/Courses.md)
 - ### [Penetration Testing](1-notes/Penetration%20Testing.md)
 - ### [Bug Hunting](1-notes/Bug%20Hunting.md)

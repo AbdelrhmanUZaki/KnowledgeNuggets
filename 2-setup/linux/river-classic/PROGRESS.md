@@ -1,0 +1,113 @@
+# Setup progress & status — Oct 21, 2026
+
+Goal from today's session: **lightweight + dynamic tiling + current versions**, layered on top of Ubuntu — nothing replaces the base OS, everything is a login-session choice.
+
+Host: Lenovo IdeaPad Slim 3 15IPH11 · Intel Core Ultra 5 322 (Panther Lake) · Ubuntu 26.04.1 LTS · GNOME Shell 50.1 (Wayland).
+
+## Decisions (and why)
+
+| Option | Verdict | Reason |
+|---|---|---|
+| **dwl** | rejected | upstream archived/un-maintained (Aug 2025); last release pins wlroots 0.17, Ubuntu 26.04 ships 0.19; only a personal fork (sewn/dwl) tracks newer |
+| **sway** | rejected | static/manual tiling only (i3 tree), you explicitly want dynamic |
+| **Hyprland** | rejected | dynamic ✓ but heaviest of the light trio; repo version 0.53.3 vs current v0.56.2 (wiki itself calls Ubuntu's stale) |
+| **niri** | parked | nice scroll-tiling but different paradigm; needs source build |
+| **GNOME + PaperWM** | tested → **swapped out** | user rejected the horizontal scrolling paradigm; wants classic per-workspace tiling |
+| **GNOME + Tiling Shell** | **active from next login** | per-workspace automatic layouts (dual/grid/master styles), no scrolling; dwm-style binds baked into schema: focus `Super+h/j/k/l`, cycle layouts `Super+Space` |
+| **river-classic** | built — **second test** | the dwm-souled dynamic tiler: tags (not workspaces), master/stack `rivertile`, `riverctl` runtime config; fresh stable v0.3.17 (Oct 2026); lightest (~300–400 MB idle); compiled locally with Zig 0.16 + wlroots 0.20 |
+| **dwm on X (your old bundle)** | parked, ready | `build-ubuntu-26.sh` + README fixups; lightest of all, but X11 has a deprecation horizon (~2028) |
+
+## What's on disk right now
+
+| Piece | Version | Location |
+|---|---|---|
+| Zig toolchain | 0.16.0 | `~/.local/zig-0.16.0/` (sudo-free) |
+| wlroots | 0.20.2 (built: gles2+xwayland ✓) | libs `~/.local/lib/x86_64-linux-gnu/libwlroots-0.20.so`, headers `~/.local/include/wlroots-0.20/`, pkgconfig `wlroots-0.20.pc` (+ `wlroots.pc` shim I added) |
+| **river-classic** | **v0.3.17 stable** | binaries `~/.local/bin/{river,riverctl,rivertile}`; source `~/src/river-classic` (tag checked out) |
+| river config (dwm-flavored) | — | `~/.config/river/init` (foot, fuzzel, Super+Return=zoom, tags 1–9, H/L master ratio, pactl volume, waybar+dunst+your wallpaper autostart) |
+| waybar status config (river module) | — | `~/.config/waybar/config.jsonc` |
+| GDM session draft | — | `~/.local/share/wayland-sessions/river-classic.desktop` (needs one `sudo cp` to activate — see below) |
+| GNOME: Tiling Shell | 18.0 (paperwm v148 superseded) | `~/.local/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com` — **in enabled-extensions as of Oct 21 (live swap)**; PaperWM stays installed but disabled; re-enable with `gnome-extensions enable paperwm@paperwm.github.com` + relogin |
+| `apt` (installed today) | — | build chain (`build-essential meson ninja scdoc pkg-config`, dev headers incl. `libwayland-dev libinput-dev libxkbcommon-dev …`) + runtime set (`foot fuzzel swaybg swaylock swayidle grim slurp wl-clipboard waybar dunst xdg-desktop-portal(-wlr) brightnessctl`) |
+| Old dwm bundle | dwm 6.5 set | `/home/zaki/dwm-setup - after fix/dwm-setup/` — untouched, still has `build-ubuntu-26.sh` |
+
+Runtime note: river links our private wlroots, so manual CLI runs need `LD_LIBRARY_PATH=$HOME/.local/lib/x86_64-linux-gnu` (the GDM session file already sets it via `Exec=env …`).
+
+## ＝ Your test plan, in order ＝
+
+**UPDATE (Oct 21, late):** decision made — **river-classic becomes the daily driver.** GNOME-side experiments were rolled into stock (`enabled-extensions` reset to ding/dock/tiling-assistant; PaperWM & Tiling Shell disabled but installed; `focus-active-notification` unbound from `Super+n`). PaperWM rejected: horizontal scroll paradigm. Tiling Shell rejected: layouts felt — user wants tags/dwm model straight.
+
+### Activation (needs ONE sudo line — the only pending step)
+
+### 1st test — PaperWM (already armed)
+1. **Log out & log back in** (same account; GNOME session, Wayland).
+2. Windows will auto-tile into the scrollable strip; swipe the trackpad to move between them; `gnome-extensions prefs paperwm@paperwm.github.com` opens settings.
+3. If you dislike it, swap to Tiling Shell for comparison:
+   ```sh
+   gnome-extensions disable paperwm@paperwm.github.com
+   gnome-extensions enable tilingshell@ferrarodomenico.com   # then relogin
+   ```
+4. Full revert to stock Ubuntu tiling:
+   ```sh
+   gsettings reset org.gnome.shell enabled-extensions
+   rm -rf ~/.local/share/gnome-shell/extensions/paperwm@paperwm.github.com \
+          ~/.local/share/gnome-shell/extensions/tilingshell@ferrarodomenico.com
+   ```
+
+### river-classic — ★ CHOSEN daily driver (activation = the sudo cp below)
+
+### river-classic status bar v2 (Oct 21, 14:38) — GNOME-grade functionality
+- waybar 0.15, config `~/.config/waybar/config.jsonc` + solarized theme `~/.config/waybar/style.css` (Ubuntu Mono 14)
+- left: river/tags (dwm tags, clickable); center: clock (**hover = calendar popup**); right: mpris, pulseaudio (**click = mute, scroll = volume**), backlight (**scroll = brightness**), network (**click = nm-connection-editor**), battery (ETA on hover, warning/critical coloring), tray, **custom/power** button → `~/.config/river/power-menu.sh` (fuzzel dmenu: Logout/Lock/Reboot/Poweroff/Suspend)
+- bar spawned on BOTH outputs (eDP-1 + DP-1); NOTE: the 2026-10 Ubuntu waybar has **no plain `river` module** (only `river/tags`)
+- for near-feature parity with GNOME: user may `sudo apt install pavucontrol nm-applet blueberry` (audio mixer popup, network tray applet, bluetooth tray — the waybar `tray` module is the host)
+- power-menu.sh needs fuzzel dmenu mode (`--dmenu`) ✓, swaylock ✓, absolute riverctl path due to waybar spawn env
+
+### status bar v3 (Oct 21, 14:51) — GNOME parity round
+- helpers: `~/.config/waybar/{notify.sh,bt-toggle.sh}`, `~/.config/river/{screenshot.sh,media-key.sh}` (all executable)
+- new in bar: 🔔 DND toggle (dunstctl, custom/notify, return-type json), bluetooth block (click = power toggle, ✆ device when connected), 📸 screenshot button (click = region via slurp, right-click = full), clock click opens gnome-calendar, network right-click toggles wifi radio (nmcli)
+- battery de-tofu'd: plain `{capacity}%` + ⚡/✓ glyphs (no nerd font installed; `{icon}` arrays render boxes)
+- keyboard (init + live): XF86AudioPlay/Pause → `media-key.sh playpause`, Next/Prev; Print = full-screen grim, Super+Shift+Print = region; **tags are on ALT per user request (Oct 21, migrated live from Super: Alt+num = switch, Alt+Shift+num = move view, Alt+0 = all)**; media keys work via dbus-send MPRIS fallback (playerctl NOT installed)
+- screenshots land in `~/Pictures/Screenshots/`, wl-copied if wl-copy present
+- known noise: waybar 0.15 mpris module probes `playerctld` (error line in log, non-fatal; `use-playerctld: false` key NOT honored in 0.15) — bar unaffected
+- corrected install names (blueberry/nm-applet don't exist in Ubuntu 26.04 repos): `sudo apt install pavucontrol network-manager-gnome blueman` (pre-wired: pulseaudio right-click = pavucontrol; init spawns `nm-applet` + `blueman-applet` guarded, waybar tray hosts them) — **installed & applets spawned live Oct 21** (`nm-applet` + `blueman-applet` via riverctl spawn into river's cgroup; future logins spawn them from the init)
+- (7) **brightness scroll was dead**: `brightnessctl` direct write denied (user not in `video` group); logind `SetBrightness` via "self" object path resolves by **caller's logind session** — the harness-spawned waybar sat in the *wrong session cgroup* → refused → fell back to sysfs (denied too). Fix: `~/.config/waybar/brightness.sh` computes ±2% and calls `SetBrightness` (self → then active seat0 session scan fallback); the *live* bar must be spawned **through river** (`riverctl spawn 'env PATH=… sh -c "waybar …>>log 2>&1"'`) so it inherits river's session scope (verify: `/proc/<waybar-pid>/cgroup` = session-NN.scope). `riverctl spawn` from the harness is the ONLY way to place children in the river session's cgroup.
+- (8) wifi UX: radio-off state made the module vanish (no `format-disabled`) → added `format-disabled: "⏚ wifi off"`; left-click = `~/.config/river/wifi-pick.sh` (fuzzel dmenu: networks+signal %, ✓ current, "🔗 manage connections…" = nm-connection-editor, auto-enables radio if off; silent-connect fails → `foot -e wifi-connect.sh` for the password prompt); right-click = radio toggle. **Gotchas**: `nmcli device wifi list ifname <dev>` (NOT `dev`); terse TYPE is `wifi` (not `802-11-wireless`); pkill -f matches its own shell — bracket-trick the pattern.
+- (9) relogin regression 15:05: all processes came up BUT the bar never attached (spawned during VT/output churn + a 25 s "desktop appearance" portal stall; user left for tty before draw). Fix pattern: kill zombies (incl. orphaned init retry-loop shells — cmdline = the init script path), respawn fresh via `riverctl spawn` (lands in river's cgroup), or arm a one-shot spawn-on-resume watcher (`/tmp/opencode/arm-bar-v2.sh`: waits `/sys/class/tty/tty0/active` == river's tty). Ubuntu `waybar.service` user unit **masked** (`systemctl --user mask waybar.service`) — it was restart-storming at every login transition ("no layer shell" ×∞).
+- (10) occupied-tag indicator: waybar 0.15 river/tags CSS classes are **`.occupied`/`.focused`/`.urgent`** (NOT sway's `.visible` — never matched); all-9 tags now always shown (bogus `hide-empty-tags` key removed — the real 0.15 key is `hide-vacant`). Occupied = teal number on translucent teal pill; urgent = red pill; focused = solid slate. **GTK3 CSS has NO `::after`/content pseudo-elements** — attempt crashed waybar instantly (`style.css:36 Invalid name of pseudo-class`, waybar exits on CSS parse errors) → pill background instead of dot.
+- (11) waybar best-practices audit (researched omarchy / waybar-minimal / stock configs): **one control surface per concern** → `nm-applet` + `blueman-applet` deliberately NOT auto-spawned anymore (init lines commented; live ones killed — "No icon name or pixmap" tray errors right after the kill are transient). Tray module kept (future applets). Completions: battery `format-<status>` keys match sysfs status lowercased → Lenovo `Not charging` needs BOTH `format-not-charging` (hyphen) and `"format-not charging"` (space) belt-and-braces; tooltip = `{capacity}% · {time} · {power} W`, `format-time {H}:{m}`; CSS `#battery.charging/.plugged` amber; bluetooth right-click = `blueman-manager`; wifi tooltip = essid · signal · ipaddr; **Alt+B toggles the bar** (`killall -USR1 waybar` — USR1 = show/hide toggle, verified the process survives), mapped live + in init (dwm Mod+B muscle memory).
+- (12) DE-parity round (GNOME top-bar feature parity): `river/window` module added left-after-tags (focused title, id `#window`, dimmed italic css, max-length 40); `power-profiles-daemon` module (click = cycle performance→balanced→saver via powerprofilesctl; text format = tofu-safe); mpris now interactive (click = playpause, right = next via media-key.sh); 🔔 right-click = `dunstctl context` (notification history); power menu gained `Settings` (gnome-control-center). **ZCode insight**: recurring `Item '': No icon name or pixmap given` ×2 (one per output-bar) = the user's running `/opt/ZCode/zcode` app (pid viable, launched 15:34 from session) registering an icon-less SNI item on the bus — cosmetic, do NOT kill the app; waybar hosts StatusNotifierWatcher itself (verified: no applets anywhere, RegisteredStatusNotifierItems = 1 unique-name item).
+- (13) System-Menu redesign (GNOME top-bar parity, researched from official GNOME docs + waybar module-group wiki): every system indicator (network / bluetooth / battery / ⏻) now opens ONE grouped hub `~/.config/river/quick-settings.sh` (fuzzel dmenu = the "popover"): toggles group (profile / dark-mode / wifi / bluetooth / DND with live state), submenu group (choose network → wifi-pick.sh, bluetooth devices → blueman-manager), session group (settings/lock/logout/reboot/suspend/poweroff, GNOME panel order); re-execs after each toggle = panel-stays-open feel. Right-clicks stay as fast paths (wifi radio toggle, blueman-manager). bt-toggle.sh learned `status` arg. dash gotcha **#1**: one-line function body REQUIRES `; }` (`f() { echo hi }` = "expecting }" at EOF — parser swallows file); bash -n + dry-run state getters as launch gates. Also added `reload_style_on_change: true` (live CSS hot-reload) + GNOME-order right cluster (mpris·volume·brightness | network·BT·battery·profile | DND·tray·screenshot·⏻). power-menu.sh superseded by quick-settings.sh (kept as file). Restored BT adapter to on after a mis-toggled dry-run.
+- (14) **UI/UX redesign round** (the "professional" pass): design system = one flat surface, monochrome FontAwesome icons, Ubuntu Sans 13px (was Ubuntu Mono bold), semantic accents only (cyan = occupied tag, amber = charger/DND, red = critical, dim = inactive), GNOME-45 style focused-workspace chip (cream bg + dark text), no per-module chips, 120 ms hover transitions, `reload_style_on_change: true` (live CSS edits). FontAwesome ships with Ubuntu — 35 codepoints verified against the font's own charset via `fc-query`; icons embedded as pango spans `<span font_family='FontAwesome' size='128%'>`. Bar slimmed to GNOME's model (state in the bar, actions in the panel): DND bell now appears ONLY while DND is on, screenshot button + power-profile chip moved into the panel. **NEW `~/.config/river/system-panel.py`** — a real GTK3 quick-settings popover (PyGObject): header (battery % + Settings + Screenshot), 6 toggle tiles (Wi-Fi / Bluetooth / profile / dark mode / DND / screenshot), live sliders (volume, brightness), session row (lock / logout / reboot / suspend / power off). Docked via **wlr-layer-shell** (`libgtk-layer-shell0` installed, no GI typelib → C API via ctypes; the GObject pointer is `hash(widget)` — `__gpointer__` is a PyCapsule and cannot be cast; river speaks layer-shell v4). Keyboard = ON_DEMAND (EXCLUSIVE would hijack the user's typing in the focused app); dismiss = pointer must have entered the panel first, focus-out only counts if the panel actually held focus. **Audio is PipeWire, not PulseAudio**: `pactl` does not exist (that was the old "pactl: not found" + the broken volume click) → `wpctl` everywhere; `brightness.sh` gained an absolute `set <percent>` mode for the panel slider. GTK3 CSS traps: themed buttons/sliders paint their own background over CSS (need `background-image: none` + `relief NONE`); a GtkBox's style classes are `['panel','horizontal']` — there is no "box" class, so `.box.panel` never matched. Method: design → `grim` screenshot → critique → refine (4 visual iterations).
+- (15) **reboot regression + dotfiles sync**: after a reboot the bar was GONE — root cause: the init redirected waybar's output to `/tmp/opencode/…`, and **/tmp is wiped on boot** → the redirect failed → waybar never started (everything else came up fine). Fix: persistent state dir `${XDG_STATE_HOME:-$HOME/.local/state}/river-classic` (created at init start) for the bar log, panel errors, brightness state and the wifi hand-off file; the bar start-loop now also **verifies the bar actually attached** (waits for a new "Bar configured" line, up to 25 s, 3 attempts) instead of only retrying when waybar exits. Also caught a copy bug: `quick-settings-dmenu.sh` had become a byte-copy of the panel script (would have recursed infinitely as the fallback) → restored as the real keyboard-only menu. **Dotfiles**: the whole setup now lives in `~/Github/KnowledgeNuggets/2-setup/linux/river-classic/` (config/river + config/waybar + assets/wallpaper + install.sh + restore.sh + README + this log); `~/.config/{river,waybar}` are symlinks into that repo (edits are live, the repo is the source of truth) with the originals backed up to `~/.dotfiles-backup-<ts>/`.
+
+**Troubleshooting solved log (Oct 21):**
+ (1) blank/static screen → `~/.config/river/init` lacked the executable bit — `chmod +x` fixed it. (2) wallpaper+cursor but dead bar & binds → **GDM does not source `~/.profile`, so `riverctl`/`rivertile` were invisible**: solved with `export PATH="$HOME/.local/bin:$PATH"` at the top of the init; waybar stderr now logged to `/tmp/opencode/river-waybar.log` for future debugging. River's default empty bg is Solarized navy (#002b36), not green — any *green/garbage* = renderer/DRM issue → next lever: `WLR_DRM_NO_MODIFIERS=1` in the desktop `Exec=env`. (3) foot invisible/windows unmapped → **v0.3.17 rivertile has NO `-view-count` flag** (journal: `usage: rivertile`) → no layout generator = spawned views never map; fixed init to `rivertile -main-count 1 &`. (4) init-spawned waybar died silently with zero stderr — journald **rate-limits** floods (the self-restarting Ubuntu `waybar.service` unit spamming under GNOME eats the evidence), so keep stderr+stdout of session children in *files*; init now runs waybar with `>>log 2>&1` inside a `3×` retry loop. (5) **live-fix trick (no relogin)**: find socket from a session child env `tr '\0' '\n' </proc/<swaybg-pid>/environ` → `WAYLAND_DISPLAY=… XDG_RUNTIME_DIR=/run/user/1000 setsid -f <waybar|rivertile>` attaches to the RUNNING compositor; `foot` fails with "no monitors available" while river is VT-paused (wl_output globals vanish when outputs are disabled — CRTC disable errors on `xe` when switching tty; resume is automatic on VT return). (6) **THE BIG ONE — waybar died ~25s after launch, twice, silently**: cause = **river-classic never publishes the session env to dbus + user systemd** (GNOME's session manager does it; river doesn't) → the user manager had NO `WAYLAND_DISPLAY` → dbus-activated `xdg-desktop-portal`/`-gtk` impls started environment-blind, never claimed their bus names in time (Type=dbus units killed at 90s start timeout; every internal call hit dbus's 25 s activation timeout) → waybar's *core* `org.freedesktop.portal.Settings` call timed out and killed the process. Fix: `WAYLAND_DISPLAY=… XDG_CURRENT_DESKTOP=river-classic XDG_SESSION_TYPE=wayland dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE` **at the top of init** (added), after which the portal chain starts instantly. Bonus trick: `/usr/libexec/xdg-desktop-portal-gtk` run directly via `setsid -f` claims its bus name in seconds even while river is VT-paused — useful to un-wedge a poisoned activation chain without restarting the user manager.
+1. One sudo line unlocks the GDM gear entry:
+   ```sh
+   sudo cp ~/.local/share/wayland-sessions/river-classic.desktop /usr/share/wayland-sessions/
+   ```
+2. Log out → gear menu → **river-classic** → log in.
+3. What you get: foot terminal (`Super+Shift+Return`), fuzzel launcher (`Super+P`), tags 1–9 (`Super+1..9`), zoom (`Super+Return`), master ratio (`Super+H/L`), main-count (`Super+Shift+H/L`), orientation arrows, close `Super+Q`, exit `Super+Shift+E` — your dwm reflexes carry over; notes: `~/.config/river/init`.
+4. Full revert: `sudo rm /usr/share/wayland-sessions/river-classic.desktop` + optionally `rm -rf ~/.local/bin/river ~/.local/bin/riverctl ~/.local/bin/rivertile ~/.local/lib/x86_64-linux-gnu/libwlroots-0.20.so ~/.local/include/wlroots-0.20 ~/src/river-classic ~/.local/share/wayland-sessions/river-classic.desktop ~/.config/river ~/.config/waybar`.
+
+## Maintenance (rebuild whenever you want)
+
+```sh
+# river-classic update:
+cd ~/src/river-classic && git fetch --tags && git checkout <new-tag>
+PATH="$HOME/.local/zig-0.16.0:$PATH" \
+PKG_CONFIG_PATH="$HOME/.local/lib/x86_64-linux-gnu/pkgconfig" \
+zig build -Doptimize=ReleaseSafe --prefix "$HOME/.local" install
+
+# wlroots future release: download URL pattern (0.20.x done today):
+# https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/<ver>/wlroots-<ver>.tar.gz
+# → meson setup build --prefix=$HOME/.local --buildtype=debugoptimized -Dexamples=false && ninja -C build install
+```
+
+## Reference facts captured today (for future personas)
+
+- Hyprland current = v0.56.2 (2026-08-05) vs Ubuntu repo 0.53.3 — PPA route exists if ever revisited.
+- dwl ecosystem: djpohly/dwl archived · dwl/dwl stagnant (issue #1166) · sewn/dwl personal fork active.
+- river history: ≤0.3 classic semantics → v0.4.0 (Mar 2026) split WM from compositor; v0.5.0 continues as lib-compositor (#river-window-management-v1); the classic line lives as `river-classic` (v0.3.17, Oct 2026) pinning zig-wlroots 0.20.1.
+- Ubuntu 26.04 ships `libwlroots-0.19`; GNOME 50.1; sway 1.11; i3 4.25; waybar 0.15; foot 1.25; fuzzel 1.12; rofi 2.0 (wayland-native).

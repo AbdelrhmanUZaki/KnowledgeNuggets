@@ -1,0 +1,134 @@
+#!/bin/sh
+# river-classic init — zaki (Ubuntu 26.04, Oct 2026)
+# Deviced after /home/zaki/dwm-setup - after fix (dwm 6.5 muscle memory).
+# Everything is runtime-configurable: edit & rerun — no recompiling needed.
+
+# GDM does NOT source ~/.profile — make our ~/.local/bin tools visible!
+export PATH="$HOME/.local/bin:$PATH"
+
+# publish session env to dbus + user systemd, so dbus-activated services (portals!)
+# don't die of activation timeouts under non-GNOME compositors (GNOME does this for
+# you; river-classic doesn't!)
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
+
+# ---- launcher / terminal -----------------------------------------------------
+riverctl map normal Super P spawn fuzzel
+riverctl map normal Super+Shift Return spawn foot
+
+# ---- dwm core binds ----------------------------------------------------------
+riverctl map normal Super Q close                    # Mod+Shift+Q in dwm
+riverctl map normal Super+Shift E exit
+
+riverctl map normal Super J focus-view next
+riverctl map normal Super K focus-view previous
+riverctl map normal Super+Shift J swap next          # Mod+Shift+j (push)
+riverctl map normal Super+Shift K swap previous
+
+riverctl map normal Super Return zoom                # dwm Mod+Return = zoom
+
+# master/stack sizing, exactly like dwm
+riverctl map normal Super H send-layout-cmd rivertile "main-ratio -0.05"
+riverctl map normal Super L send-layout-cmd rivertile "main-ratio +0.05"
+riverctl map normal Super+Shift H send-layout-cmd rivertile "main-count -1"
+riverctl map normal Super+Shift L send-layout-cmd rivertile "main-count +1"
+
+# orientation like dwm's mfact side change
+riverctl map normal Super Up    send-layout-cmd rivertile "main-location top"
+riverctl map normal Super Right send-layout-cmd rivertile "main-location right"
+riverctl map normal Super Down  send-layout-cmd rivertile "main-location bottom"
+riverctl map normal Super Left  send-layout-cmd rivertile "main-location left"
+
+# ---- tags: dwm tag model on ALT (view = tag set) --------------------------------
+for i in $(seq 1 9)
+do
+    tags=$((1 << ($i - 1)))
+    riverctl map normal Alt $i set-focused-tags $tags                # Alt+num
+    riverctl map normal Alt+Shift $i set-view-tags $tags             # Alt+Shift+num = move window
+    riverctl map normal Alt+Control $i toggle-focused-tags $tags
+    riverctl map normal Alt+Shift+Control $i toggle-view-tags $tags
+done
+all_tags=$(((1 << 32) - 1))
+riverctl map normal Alt 0 set-focused-tags $all_tags
+riverctl map normal Alt+Shift 0 set-view-tags $all_tags
+
+# ---- float / fullscreen / mouse ------------------------------------------------
+riverctl map normal Super Space toggle-float
+riverctl map normal Super F toggle-fullscreen
+riverctl map-pointer normal Super BTN_LEFT move-view
+riverctl map-pointer normal Super BTN_RIGHT resize-view
+riverctl map-pointer normal Super BTN_MIDDLE toggle-float
+
+# ---- resizes -------------------------------------------------------------------
+riverctl map normal Super+Alt+Shift H resize horizontal -100
+riverctl map normal Super+Alt+Shift L resize horizontal 100
+riverctl map normal Super+Alt+Shift J resize vertical 100
+riverctl map normal Super+Alt+Shift K resize vertical -100
+
+riverctl map normal Super Period focus-output next
+riverctl map normal Super Comma focus-output previous
+riverctl map normal Super+Shift Period send-to-output next
+riverctl map normal Super+Shift Comma send-to-output previous
+
+# ---- volume (pactl, like the old dwm 'sound' script) ---------------------------
+for mode in normal locked
+do
+    riverctl map $mode None XF86AudioRaiseVolume spawn 'pactl set-sink-volume @DEFAULT_SINK@ +5%'
+    riverctl map $mode None XF86AudioLowerVolume spawn 'pactl set-sink-volume @DEFAULT_SINK@ -5%'
+    riverctl map $mode None XF86AudioMute        spawn 'pactl set-sink-mute @DEFAULT_SINK@ toggle'
+    riverctl map $mode None XF86MonBrightnessUp   spawn 'brightnessctl set +5%'
+    riverctl map $mode None XF86MonBrightnessDown spawn 'brightnessctl set 5%-'
+done
+
+# ---- media keys / screenshots / notifications (GNOME conventions) -------------
+riverctl map normal Alt b spawn "killall -USR1 waybar"   # dwm-style bar hide/show (toggles)
+riverctl map normal None XF86AudioPlay    spawn "$HOME/.config/river/media-key.sh playpause"
+riverctl map normal None XF86AudioPause   spawn "$HOME/.config/river/media-key.sh playpause"
+riverctl map normal None XF86AudioNext    spawn "$HOME/.config/river/media-key.sh next"
+riverctl map normal None XF86AudioPrev    spawn "$HOME/.config/river/media-key.sh previous"
+riverctl map normal None Print            spawn "$HOME/.config/river/screenshot.sh full"   # Print = full screen
+riverctl map normal Super+Shift Print     spawn "$HOME/.config/river/screenshot.sh"        # Shift+Print = region
+
+# ---- autostart -----------------------------------------------------------------
+# persistent state dir — /tmp is wiped on every boot, which silently killed the bar
+# (its log redirect failed -> waybar never started)
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/river-classic"
+mkdir -p "$STATE_DIR"
+BAR_LOG="$STATE_DIR/waybar.log"
+
+# status bar — up to 3 tries, and every attempt must actually ATTACH to an output
+# (a bar that starts while the outputs are still coming up stays invisible)
+( for i in 1 2 3 ; do
+      before=$(wc -l < "$BAR_LOG" 2>/dev/null || echo 0)
+      waybar -c "$HOME/.config/waybar/config.jsonc" >>"$BAR_LOG" 2>&1 &
+      wp=$!
+      attached=0
+      for t in $(seq 1 25) ; do
+          sleep 1
+          if tail -n +$((before + 1)) "$BAR_LOG" 2>/dev/null | grep -q "Bar configured"; then
+              attached=1
+              break
+          fi
+          kill -0 "$wp" 2>/dev/null || break      # waybar died on its own
+      done
+      [ "$attached" = 1 ] && break
+      kill "$wp" 2>/dev/null
+      sleep 2
+  done ) &
+# notifications (unchanged dunstrc — dunst is Wayland-native)
+dunst &
+# wallpaper — first match wins: $RIVER_WALLPAPER → installed → repo → legacy dwm bundle
+WALLPAPER="${RIVER_WALLPAPER:-}"
+[ -n "$WALLPAPER" ] || WALLPAPER="$HOME/.local/share/wallpapers/river-classic.jpg"
+[ -f "$WALLPAPER" ] || WALLPAPER="$HOME/Github/KnowledgeNuggets/2-setup/linux/river-classic/assets/wallpaper.jpg"
+[ -f "$WALLPAPER" ] || WALLPAPER="/home/zaki/dwm-setup - after fix/dwm-setup/wallpapers/anna-wangler-_GqwoiT7QY8-unsplash.jpg"
+[ -f "$WALLPAPER" ] && swaybg -i "$WALLPAPER" -m fill &
+
+# tray applets: intentionally not spawned — the bar's network/bluetooth modules are the single
+# control surfaces (best practice: no duplicate concern). Uncomment if you ever want tray icons
+# command -v nm-applet      >/dev/null 2>&1 && nm-applet      &
+# command -v blueman-applet >/dev/null 2>&1 && blueman-applet &
+
+# ---- defaults ------------------------------------------------------------------
+riverctl set-repeat 50 300
+riverctl default-layout rivertile
+rivertile -main-count 1 &   # 1 master + stack (dwm default; '-view-count' does NOT exist in v0.3.17)

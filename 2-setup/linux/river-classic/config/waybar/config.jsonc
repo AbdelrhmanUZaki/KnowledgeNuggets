@@ -1,0 +1,116 @@
+// waybar — GNOME-class top bar for river-classic
+// Design contract:
+//   · the bar shows STATE, the System Menu (quick-settings.sh) holds ACTIONS
+//   · one flat surface, monochrome FontAwesome icons, semantic accents only
+//     (amber = charging / DND, red = critical, cyan = occupied workspace)
+{
+    "height": 30,
+    "reload_style_on_change": true,
+    "spacing": 2,
+
+    "modules-left":   ["river/tags", "river/window"],
+    "modules-center": ["clock"],
+    "modules-right":  ["mpris", "pulseaudio", "backlight", "network", "bluetooth", "battery", "custom/notify", "tray", "custom/power"],
+
+    "river": {
+        "num-tags": 9
+    },
+
+    // focused application title (GNOME AppMenu equivalent)
+    "river/window": {
+        "format": "{}",
+        "max-length": 40
+    },
+
+    "clock": {
+        "format": "{:%a %d %b  %H:%M}",
+        "tooltip-format": "<big>{:%A %d %B %Y}</big>\n<tt><small>{calendar}</small></tt>",
+        "calendar": { "mode": "month" },
+        "on-click": "gnome-calendar"
+    },
+
+    // media — monochrome play/pause, title recedes
+    "mpris": {
+        "use-playerctld": false,
+        "format": "<span font_family='FontAwesome' size='128%'>{icon}</span>  {dynamic}",
+        "format-paused": "<span font_family='FontAwesome' size='128%'>{status_icon}</span>  {dynamic}",
+        "format-icons": { "playing": "\uf04b", "paused": "\uf04c" },
+        "dynamic-order": ["title", "artist"],
+        "max-length": 26,
+        "on-click": "$HOME/.config/river/media-key.sh playpause",
+        "on-click-right": "$HOME/.config/river/media-key.sh next",
+        "tooltip-format": "click = play/pause · right-click = next"
+    },
+
+    "pulseaudio": {
+        "scroll-step": 2,
+        "format": "<span font_family='FontAwesome' size='128%'>\uf028</span> {volume}%",
+        "format-muted": "<span font_family='FontAwesome' size='128%'>\uf026</span> muted",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+        "on-click-right": "pavucontrol",
+        "tooltip-format": "{desc}\nclick = mute · right-click = mixer · scroll = volume"
+    },
+
+    "backlight": {
+        "format": "<span font_family='FontAwesome' size='128%'>\uf185</span> {percent}%",
+        "on-scroll-up": "$HOME/.config/waybar/brightness.sh up",
+        "on-scroll-down": "$HOME/.config/waybar/brightness.sh down",
+        "tooltip-format": "scroll = brightness"
+    },
+
+    "network": {
+        "format-wifi":     "<span font_family='FontAwesome' size='128%'>\uf012</span>",
+        "format-ethernet": "<span font_family='FontAwesome' size='128%'>\uf1b6</span>",
+        "format-linked":   "<span font_family='FontAwesome' size='128%'>\uf012</span>",
+        "format-disconnected": "<span font_family='FontAwesome' size='128%'>\uf012</span>",
+        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf012</span>",
+        "on-click": "$HOME/.config/river/quick-settings.sh",
+        "on-click-right": "if nmcli radio wifi | grep -q enabled; then nmcli radio wifi off; else nmcli radio wifi on; fi",
+        "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}\nclick = system menu · right-click = wifi on/off",
+        "tooltip-format": "no connection\nclick = system menu · right-click = wifi on/off"
+    },
+
+    "bluetooth": {
+        "format": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
+        "format-connected": "<span font_family='FontAwesome' size='128%'>\uf293</span> {device_alias}",
+        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
+        "format-off": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
+        "on-click": "$HOME/.config/river/quick-settings.sh",
+        "on-click-right": "blueman-manager",
+        "tooltip-format": "click = system menu · right-click = devices",
+        "tooltip-format-connected": "{device_alias}\nclick = system menu · right-click = manage devices"
+    },
+
+    // battery — level glyph + %, amber while on the charger
+    "battery": {
+        "states": { "warning": 25, "critical": 10 },
+        "format": "<span font_family='FontAwesome' size='128%'>{icon}</span> {capacity}%",
+        "format-icons": ["\uf244", "\uf244", "\uf242", "\uf241", "\uf241", "\uf240", "\uf240", "\uf240", "\uf240", "\uf240"],
+        "format-charging": "<span font_family='FontAwesome' size='128%'>\uf0e7</span> {capacity}%",
+        "format-plugged": "<span font_family='FontAwesome' size='128%'>\uf240</span> {capacity}%",
+        "format-not-charging": "<span font_family='FontAwesome' size='128%'>\uf240</span> {capacity}%",
+        "format-not charging": "<span font_family='FontAwesome' size='128%'>\uf240</span> {capacity}%",
+        "format-full": "<span font_family='FontAwesome' size='128%'>\uf240</span> {capacity}%",
+        "format-time": "{H}:{m}",
+        "tooltip-format": "{capacity}% · {time} · {power} W\nclick = system menu",
+        "on-click": "$HOME/.config/river/quick-settings.sh"
+    },
+
+    // DND — GNOME-style: invisible while notifications are normal
+    "custom/notify": {
+        "return-type": "json",
+        "exec": "$HOME/.config/waybar/notify.sh",
+        "interval": 5,
+        "on-click": "dunstctl set-paused toggle",
+        "on-click-right": "dunstctl context"
+    },
+
+    "tray": { "icon-size": 16 },
+
+    // system menu — the single grouped action surface
+    "custom/power": {
+        "format": "<span font_family='FontAwesome' size='128%'>\uf011</span>",
+        "on-click": "$HOME/.config/river/quick-settings.sh",
+        "tooltip-format": "system menu"
+    }
+}

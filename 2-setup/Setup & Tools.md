@@ -1,5 +1,6 @@
 - [Obsidian](https://obsidian.md/) (Note-taking app)
 - [Linux Setup](linux/Linux%20Setup.md)
+- [river-classic — dynamic-tiling Wayland session](linux/river-classic/README.md) (dwm-style tags, waybar + GNOME-class system panel)
 - warp terminal
 	- Offers some features like a very big screen for all outputs that was printed in the terminal, also copies the output of a command fast
 - **Fuzzing**:

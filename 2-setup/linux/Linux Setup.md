@@ -201,7 +201,33 @@ sudo systemctl enable --now thermald
 > **Note:** I am still testing whether both the GRUB edit and `thermald` are required, or if `thermald` alone is enough. For now I keep both active.
 > Optional extra safety: limit CPU max performance to 70% with `echo 70 | sudo tee /sys/devices/system/cpu/intel_pstate/max_perf_pct`.
 
-## 9. AI-agent sandbox VMs (agent-vm + vmup + ZCode Remote SSH)
+## 9. Wayland session: river-classic
+
+A lightweight **dynamic-tiling Wayland** desktop (dwm tag model) that keeps GNOME intact
+as the fallback session. Full guide: [`river-classic/README.md`](river-classic/README.md).
+
+```bash
+cd 2-setup/linux/river-classic
+./install.sh          # deps (sudo) → build wlroots 0.20.2 + river-classic v0.3.17 → GDM entry → config
+./restore.sh          # re-apply the config only (symlinks ~/.config/{river,waybar} → repo)
+```
+
+Then log out and pick **river-classic** in the GDM gear menu.
+
+| Piece | What it gives you |
+|---|---|
+| `river-classic` v0.3.17 (Zig build) | compositor: dynamic tiling, dwm tags, runtime keybinds |
+| `waybar` (solarized dark) | flat top bar: workspaces, clock, volume/brightness/wifi/bluetooth/battery, DND bell, screenshots, power |
+| `system-panel.py` | GNOME-style **System Menu** popover (wlr-layer-shell, docked under the bar): toggle tiles, live sliders, session row |
+| `init` | boots dunst/swaybg/waybar, exports the dbus/session env, Alt-based tag binds |
+
+Keybinds: `Alt+1..9` switch tag, `Alt+Shift+1..9` **move the window to a tag**, `Super+Shift+Return` terminal
+(foot), `Super+P` launcher (fuzzel), `Alt+B` hide/show the bar.
+
+> The config is symlinked into `~/.config`, so **edits in the repo are live** — change
+> `config/waybar/style.css` and the bar reloads it.
+
+## 10. AI-agent sandbox VMs (agent-vm + vmup + ZCode Remote SSH)
 
 Every project gets its own isolated Debian VM (own kernel, docker inside), and
 the ZCode GUI connects to it over SSH while staying on the host — see
@@ -224,3 +250,4 @@ vmup          # create/start the VM, pin its SSH port, refresh the ssh alias
 - **`konsole`** – terminal; set font size + Nerd Font for nvim
 - **`tmux`** – multiplexer (`tmux.conf`)
 - **`gh`** – GitHub CLI (`gh auth login`)
+- **river-classic** – dynamic-tiling Wayland session: compositor + waybar + system panel (see §9)
