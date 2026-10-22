@@ -87,6 +87,7 @@ nothing to maintain; the tooltips keep the details (signal strength, IP).
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
 | `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, 4-swipe brightness, physical press 1 = left / 2–3 = right |
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
+| `config/river/unlock-session.sh` | releases a session that river left locked (black screen recovery) |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
@@ -176,6 +177,17 @@ Tags are on **Alt** (dwm muscle memory), not Super.
   (no layer-shell compositor to attach to) — it is masked by `install.sh`.
 - **Never `pkill -f` a pattern that appears in your own command line** — it matches
   the shell running it.
+- **river's session lock can strand the session**: `LockManager.handleDestroy()` does not
+  unlock when the lock client dies, so killing a locker (or a locker that has no tty to
+  read the password from) leaves **a black screen with only the cursor**, and a VT switch
+  does not help — the state lives in the compositor. The session button therefore starts
+  `foot -e swaylock` (foot provides the tty) instead of a bare `swaylock`. If you ever
+  land in the black state, `~/.config/river/unlock-session.sh` releases it: it asks the
+  compositor for the lock, waits for the `locked` event (which river sends immediately to
+  a new client when the session is already locked) and sends `unlock_and_destroy` — the
+  only request that makes river leave the locked state. It needs `gcc`,
+  `wayland-scanner`, `libwayland-dev` and `wayland-protocols`, and it only works **while
+  the session is locked**.
 
 Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 

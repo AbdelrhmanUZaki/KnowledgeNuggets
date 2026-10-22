@@ -174,7 +174,8 @@ class Runner:
     """
 
     def __init__(self):
-        self._live = {}
+        self._live = {}       # commands: killed when the panel closes
+        self._spawned = []    # apps: must outlive the panel
         self.alive = True
 
     def run(self, argv, cb, timeout=10.0, stdin=None):
@@ -220,14 +221,23 @@ class Runner:
             stdin if isinstance(stdin, str) else None, None, done)
 
     def spawn(self, argv):
-        """start a process and do not wait for it"""
+        """start an app that has to outlive the panel (swaylock, grim,
+        nm-connection-editor, ...).  These are deliberately NOT in the set
+        that close() force-exits -- otherwise the panel would kill the app
+        it had just started, which is why the lock button did nothing."""
         if not self.alive:
             return
         try:
             proc = Gio.Subprocess.new(argv, Gio.SubprocessFlags.NONE)
-            self._live[proc] = proc
-        except GLib.Error:
-            pass
+            self._spawned.append(proc)
+        except GLib.Error as exc:
+            try:
+                os.makedirs(STATE, exist_ok=True)
+                with open(os.path.join(STATE, "panel.log"), "a") as fh:
+                    fh.write("%s could not start %s: %s\n"
+                             % (time.strftime("%H:%M:%S"), argv[0], exc.message))
+            except OSError:
+                pass
 
     def close(self):
         self.alive = False
@@ -857,7 +867,11 @@ class Panel(Gtk.Window):
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         row.set_homogeneous(True)
         actions = (
-            ("\uf023", "Lock", ["swaylock", "-f"]),
+            # swaylock needs a tty to read the password from: started without
+            # one it authenticates with an empty password and quits at once.
+            # foot provides the tty (its window ends up behind the lock
+            # surface, the prompt is drawn by swaylock itself).
+            ("\uf023", "Lock", ["foot", "-e", "swaylock"]),
             ("\uf08b", "Log out", ["%s/.local/bin/riverctl" % HOME, "exit"]),
             ("\uf021", "Reboot", ["systemctl", "reboot"]),
             ("\uf186", "Suspend", ["systemctl", "suspend"]),
