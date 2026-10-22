@@ -101,6 +101,7 @@ script looks the sensor up by name instead. waybar's own `cpu`, `memory` and
 | `config/waybar/style.css` | the solarized dark theme (GNOME-style flat surface) |
 | `config/waybar/brightness.sh` | brightness via **logind** `SetBrightness` (±2% / absolute, `bump` for gestures) |
 | `config/waybar/notify.sh` | DND indicator (visible only while DND is on) |
+| `config/waybar/temp.sh` | CPU package temperature for the bar (finds the sensor by name) |
 | `config/waybar/bt-toggle.sh` | Bluetooth adapter power (also `status` mode) |
 | `PLAN.md` | reviewed plan for the menu rework (async panel, Wi-Fi/Bluetooth flows, live sliders, 4-finger brightness) |
 
