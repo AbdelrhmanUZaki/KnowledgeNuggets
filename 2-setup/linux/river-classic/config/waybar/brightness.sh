@@ -1,7 +1,9 @@
 #!/bin/sh
 # Brightness control for the waybar bar via logind SetBrightness (GNOME's mechanism).
-# Authoritative in-order: caller's own session ("self"); if refused (non-foreground
-# scope), fall back to the active seat0 session of this user.
+# Authoritative in-order: caller's own session ($XDG_SESSION_ID); if refused, fall
+# back to the active seat0 session of this user. logind has NO /session/self
+# object, and `loginctl show-session -p A -p B --value` does NOT preserve the
+# property order (it prints User, Seat, Active), so query each property alone.
 dev=intel_backlight
 sysp=/sys/class/backlight/$dev
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/river-classic"
@@ -30,10 +32,23 @@ write() {
         ssu backlight "$dev" "$n" 2>>"$err"
 }
 
-if ! write self; then
+ok=0
+if [ -n "$XDG_SESSION_ID" ] && write "$XDG_SESSION_ID"; then
+    ok=1
+else
     for s in $(loginctl list-sessions --no-legend 2>/dev/null | awk '{print $1}'); do
-        [ "$(loginctl show-session "$s" -p Active -p Seat -p User --value | tr '\n' ' ')" = "yes seat0 1000" ] || continue
-        write "$s" && break
+        [ "$(loginctl show-session "$s" -p Active --value 2>/dev/null)" = yes ] || continue
+        [ "$(loginctl show-session "$s" -p Seat --value 2>/dev/null)" = seat0 ] || continue
+        [ "$(loginctl show-session "$s" -p User --value 2>/dev/null)" = "$(id -u)" ] || continue
+        if write "$s"; then ok=1; break; fi
     done
 fi
-( echo "$n" > "$sysp/brightness" ) 2>/dev/null   # native fallback (usually refused)
+
+if [ "$ok" -eq 0 ]; then
+    # native fallback (usually refused on a default Ubuntu install)
+    if ! ( echo "$n" > "$sysp/brightness" ) 2>/dev/null; then
+        echo "brightness: logind and sysfs both refused" >&2
+        exit 1
+    fi
+fi
+exit 0

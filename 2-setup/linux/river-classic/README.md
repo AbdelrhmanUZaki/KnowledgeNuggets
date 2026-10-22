@@ -141,6 +141,10 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 - **A grabbed evdev fd is released by the kernel when the process dies.** That is
   why `gestures.py` can never leave a dead touchpad: worst case river goes back to
   the physical pad with stock clickfinger.
+- **logind has no `/session/self`** for `SetBrightness`; call it on the real
+  `$XDG_SESSION_ID`. Also, `loginctl show-session -p Active -p Seat -p User --value`
+  prints properties in its own order (User, Seat, Active), not the `-p` order —
+  query each property separately when matching a session.
 - **A GtkBox has no "box" style class** — `.box.panel` never matches; use `.panel`.
 - **dash needs `; }`** to close a one-line function body (`f() { echo hi }` is a
   syntax error that swallows the rest of the file).
