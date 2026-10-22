@@ -212,13 +212,16 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
     profile** opens an in-panel password dialog (masked, show/hide, inline
     error, retry). The secret is handed to `nmcli` over stdin, so it does not
     appear in the process list. Enterprise networks open
-    `nm-connection-editor`.
+    `nm-connection-editor`. A **saved** network carries a **forget** button:
+    it asks for confirmation and then deletes the NetworkManager profile
+    (password included) — you are asked for the password again next time.
   - *Bluetooth*: BlueZ over D-Bus — devices, discovery and pairing all live
     in the panel, and the panel exports an `org.bluez.Agent1`, so a device that
     asks for a **passkey, PIN or confirmation** gets an in-panel prompt
     instead of failing. Paired devices connect/disconnect, unpaired ones are
-    paired first and then connected. `blueman-manager` stays available as the
-    advanced fallback.
+    paired first and then connected. A **paired** device carries an **unpair**
+    button (with confirmation) that removes the device and its keys.
+    `blueman-manager` stays available as the advanced fallback.
   - *The lists refresh themselves* (nothing runs when the panel is closed):
     the Wi-Fi list re-reads the NetworkManager cache every **5 s** and runs an
     active radio scan every **30 s** while the page is open — NetworkManager

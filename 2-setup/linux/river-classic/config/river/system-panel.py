@@ -643,6 +643,9 @@ class Panel(Gtk.Window):
         self._bt_timer = None
         self._modal_open = False
         self._modal_on_ok = None
+        self._modal_ok_btn = None
+        self._modal_open = False
+        self._modal_on_ok = None
         self._dragging = False
         self._updating = False
         self._vol_timer = None
@@ -883,7 +886,7 @@ class Panel(Gtk.Window):
         if action:
             action(row)
 
-    def _row(self, label, sublabel="", on_click=None, icon=None):
+    def _row(self, label, sublabel="", on_click=None, icon=None, action=None):
         row = Gtk.ListBoxRow()
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         if icon:
@@ -902,6 +905,14 @@ class Panel(Gtk.Window):
             l2.get_style_context().add_class("row-sub")
             v.pack_start(l2, False, False, 0)
         hbox.pack_start(v, True, True, 0)
+        if action:
+            # a small secondary action on the row (forget / unpair)
+            btn = Gtk.Button(label=action[0])
+            btn.get_style_context().add_class("row-action")
+            btn.set_tooltip_text(action[1])
+            btn.set_valign(Gtk.Align.CENTER)
+            btn.connect("clicked", lambda _b, cb=action[2]: cb())
+            hbox.pack_end(btn, False, False, 0)
         row.add(hbox)
         if on_click:
             row.set_activatable(True)
@@ -1040,22 +1051,27 @@ class Panel(Gtk.Window):
                     bits.append("open")
                 sub = " · ".join(bits)
                 action = (lambda _r, s=ssid: self._connect_wifi(s))
-            self.wifi_list.add(self._row(label, sub, icon="\uf0eb", on_click=action))
+            forget = None
+            if saved:
+                forget = ("forget", "delete the saved profile and its password",
+                          lambda s=ssid: self._forget_wifi(s))
+            self.wifi_list.add(self._row(label, sub, icon="\uf0eb",
+                                         on_click=action, action=forget))
         self.wifi_list.add(self._row("manage connections…", "nm-connection-editor",
                                      on_click=lambda _r: self._launch(["nm-connection-editor"])))
         self.wifi_list.add(self._row("rescan", "search for networks again",
                                      on_click=lambda _r: self._rescan_wifi()))
 
     def _load_saved_wifi(self):
-        """map SSID -> saved NetworkManager profile (async, chained)"""
+        """map SSID -> (profile name, uuid) for every saved network"""
         def got_profiles(out, err, rc):
             if rc != 0:
                 return
             profiles = []
             for line in out.splitlines():
                 parts = _split_terse(line)
-                if len(parts) >= 2 and parts[1] == "802-11-wireless":
-                    profiles.append(parts[0])
+                if len(parts) >= 3 and parts[2] == "802-11-wireless":
+                    profiles.append((parts[1], parts[0]))
             saved = {}
 
             def step(index):
@@ -1065,21 +1081,21 @@ class Panel(Gtk.Window):
                     if self._wifi_cache is not None:
                         self._wifi_list_ready(self._wifi_cache, "", 0, self._wifi_epoch)
                     return
-                name = profiles[index]
+                name, uuid = profiles[index]
 
                 def got_ssid(out2, _err2, rc2):
                     ssid = ""
                     if rc2 == 0 and out2.strip():
                         ssid = out2.strip().splitlines()[0]
                     if ssid:
-                        saved[ssid] = name
+                        saved[ssid] = (name, uuid)
                     step(index + 1)
 
                 self.runner.run(["nmcli", "-g", "802-11-wireless.ssid",
-                                 "connection", "show", name], got_ssid, timeout=8)
+                                 "connection", "show", uuid], got_ssid, timeout=8)
             step(0)
 
-        self.runner.run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"],
+        self.runner.run(["nmcli", "-t", "-f", "UUID,NAME,TYPE", "connection", "show"],
                         got_profiles, timeout=8)
 
     def _wifi_signature(self, nets):
@@ -1130,8 +1146,8 @@ class Panel(Gtk.Window):
             self._launch(["nm-connection-editor"])
             return
         if saved:
-            self._nmcli(["nmcli", "--wait", "30", "connection", "up", "id", saved],
-                        "connecting to %s" % ssid)
+            self._nmcli(["nmcli", "--wait", "30", "connection", "up", "uuid",
+                         saved[1]], "connecting to %s" % ssid)
             return
         if not is_secured(security):
             self._nmcli(["nmcli", "--wait", "30", "device", "wifi", "connect", ssid],
@@ -1193,6 +1209,76 @@ class Panel(Gtk.Window):
             message = message[len("Error:"):].strip()
         self._modal_error(message or "connection failed")
         self._modal_busy(False)
+
+    def _confirm(self, title, message, ok_label, on_ok, detail=None):
+        """a modal question with a destructive action button"""
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        lbl = Gtk.Label(label=message)
+        lbl.set_line_wrap(True)
+        lbl.set_xalign(0)
+        content.pack_start(lbl, False, False, 0)
+        if detail:
+            sub = Gtk.Label(label=detail)
+            sub.set_line_wrap(True)
+            sub.set_xalign(0)
+            sub.get_style_context().add_class("row-sub")
+            content.pack_start(sub, False, False, 0)
+
+        def submit():
+            self._modal_close()
+            on_ok()
+
+        self._open_modal(title, content, ok_label, submit, destructive=True)
+
+    def _forget_wifi(self, ssid):
+        """delete the saved NetworkManager profile (and its password)"""
+        saved = self.wifi_saved.get(ssid)
+        if not saved:
+            return
+        name, uuid = saved
+        self._confirm("Forget network",
+                      "Forget the saved network “%s”?" % ssid,
+                      "Forget",
+                      lambda: self._forget_wifi_run(ssid, uuid),
+                      detail="The password is deleted. "
+                             "You will be asked for it again.")
+
+    def _forget_wifi_run(self, ssid, uuid):
+        self.note("forgetting %s…" % ssid)
+
+        def done(_out, err, rc):
+            if rc == 0:
+                self.wifi_saved.pop(ssid, None)
+                self.note("forgotten: %s" % ssid)
+                self._wifi_sig = None
+                self._load_saved_wifi()
+                self._fill_wifi_list()
+            else:
+                self.note((err or "could not forget %s" % ssid).strip())
+
+        self.runner.run(["nmcli", "connection", "delete", uuid], done, timeout=15)
+
+    def _unpair_bt(self, dev):
+        """remove a paired bluetooth device (and its keys)"""
+        self._confirm("Unpair device",
+                      "Unpair “%s”?" % dev["name"],
+                      "Unpair",
+                      lambda: self._unpair_bt_run(dev),
+                      detail="The device is removed and has to be paired again.")
+
+    def _unpair_bt_run(self, dev):
+        mac = dev["address"]
+        self.note("unpairing %s…" % dev["name"])
+
+        def done(_out, err, rc):
+            if rc == 0:
+                self.note("unpaired: %s" % dev["name"])
+                self.bt_backend.devices.pop(mac, None)
+                self._bt_updated()
+            else:
+                self.note((err or "could not unpair %s" % dev["name"]).strip())
+
+        self.runner.run(["bluetoothctl", "remove", mac], done, timeout=15)
 
     def _nmcli(self, argv, what):
         self.note(what + "…")
@@ -1273,12 +1359,15 @@ class Panel(Gtk.Window):
             self.bt_list.add(self._row("No devices yet", "scan for devices",
                                        icon="\uf293"))
         for dev in devices:
+            unpair = None
             if dev["connected"]:
                 sub = "connected · click to disconnect"
                 action = (lambda _r, d=dev: self._bt_device(d, "Disconnect"))
             elif dev["paired"]:
                 sub = "paired · click to connect"
                 action = (lambda _r, d=dev: self._bt_device(d, "Connect"))
+                unpair = ("unpair", "remove the device and its keys",
+                          lambda d=dev: self._unpair_bt(d))
             else:
                 bits = ["click to pair"]
                 if dev["rssi"] is not None and dev["rssi"] > -120:
@@ -1286,7 +1375,7 @@ class Panel(Gtk.Window):
                 sub = " · ".join(bits)
                 action = (lambda _r, d=dev: self._bt_device(d, "Pair"))
             self.bt_list.add(self._row(dev["name"], sub, icon="\uf293",
-                                       on_click=action))
+                                       on_click=action, action=unpair))
         self.bt_list.add(self._row("scan for devices" if not bt.scanning
                                    else "stop scanning",
                                    "auto-scan every %ds while this page is open"
@@ -1419,7 +1508,7 @@ class Panel(Gtk.Window):
         self.overlay.add_overlay(self._modal_scrim)
         self._modal_scrim.set_visible(False)
 
-    def _open_modal(self, title, content, ok_label, on_ok):
+    def _open_modal(self, title, content, ok_label, on_ok, destructive=False):
         self._modal_on_ok = on_ok
         for child in list(self._modal_card.get_children()):
             self._modal_card.remove(child)
@@ -1440,6 +1529,8 @@ class Panel(Gtk.Window):
         cancel.connect("clicked", lambda _b: self._modal_close())
         ok = Gtk.Button(label=ok_label)
         ok.get_style_context().add_class("session")
+        if destructive:
+            ok.get_style_context().add_class("destructive")
         ok.connect("clicked", lambda _b: self._modal_on_ok and self._modal_on_ok())
         self._modal_ok_btn = ok
         buttons.pack_start(cancel, False, False, 0)
@@ -1892,6 +1983,20 @@ list.list row { padding: 4px 6px; border-radius: 6px; }
 list.list row:hover { background-color: #073642; }
 label.row-label { color: #fdf6e3; font-size: 12px; }
 label.row-sub { color: #586e75; font-size: 10px; }
+
+/* secondary action on a row (forget / unpair) */
+button.row-action {
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid #0b4a58;
+    border-radius: 6px;
+    padding: 1px 7px;
+    color: #586e75;
+    font-size: 10px;
+}
+button.row-action:hover { background-color: #0b4a58; color: #dc322f; border-color: #dc322f; }
+button.destructive { color: #dc322f; }
+button.destructive:hover { background-color: #3b1f1f; border-color: #dc322f; }
 
 /* modal card (wifi password, bluetooth passkey) */
 .modal-scrim {
