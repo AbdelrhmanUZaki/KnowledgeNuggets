@@ -61,9 +61,16 @@ PROFILE_ICON = {"performance": "\uf0e7", "balanced": "\uf013", "power-saver": "\
 
 # how often the visible page refreshes itself, and how many ticks pass
 # between two active radio scans (only while the page is open)
+#
+# measured on this laptop: `nmcli device wifi rescan` returns instantly but
+# the radio then leaves the AP's channel for a few seconds -- ping to the
+# gateway goes from 1.2 ms to ~42 ms (peak 109 ms, no loss) while it scans.
+# wpa_supplicant's own background scan uses 15 s, so the Wi-Fi list scans
+# every 15 s; Bluetooth discovery is receive-only and stays on continuously.
 PAGE_TICK_S = 5
-AUTO_RESCAN_EVERY = 6            # 6 * 5 s = 30 s
+AUTO_RESCAN_EVERY = 3            # 3 * 5 s = 15 s
 BT_SCAN_BURST_S = 15             # discovery burst length
+SCAN_BUSY_MS = 4000              # how long the radio stays busy after a scan
 
 
 # ── pure (synchronous, fast) readers ────────────────────────────────────────
@@ -635,12 +642,14 @@ class Panel(Gtk.Window):
         self._wifi_sig = None
         self._scan_seq = 0
         self._scanning = False
+        self._scan_timer = None
         self._tick = 0
         self._page_timer = None
         self._bt_burst_timer = None
         self._bt_started = False
         self._bt_built_at = 0
         self._bt_timer = None
+        self._bt_auto = True
         self._modal_open = False
         self._modal_on_ok = None
         self._modal_ok_btn = None
@@ -946,6 +955,10 @@ class Panel(Gtk.Window):
             self.back_label.show()
         if name == "wifi":
             self._fill_wifi_list()
+            # scan right away: waiting for the first tick would show a stale
+            # list for up to 15 s
+            if not self._scanning:
+                self._rescan_wifi(quiet=True)
         elif name == "bt":
             self._fill_bt_list()
             self._bt_scan_burst()
@@ -1112,7 +1125,7 @@ class Panel(Gtk.Window):
         if self._scanning:
             self.wifi_title.set_text("Available networks · scanning…")
         else:
-            self.wifi_title.set_text("Available networks · auto-scan every %ds"
+            self.wifi_title.set_text("Available networks · live (scan every %ds)"
                                      % (PAGE_TICK_S * AUTO_RESCAN_EVERY))
 
     def _rescan_wifi(self, quiet=False):
@@ -1126,16 +1139,26 @@ class Panel(Gtk.Window):
             self.wifi_list.add(self._row("Scanning…", "this takes a few seconds"))
 
         def done(out, err, rc):
-            self._scanning = False
             if seq != self._scan_seq:
                 return
-            self._wifi_status()
+            # `nmcli device wifi rescan` only *requests* the scan and returns
+            # in milliseconds, while the radio stays busy for a few seconds --
+            # keep the "scanning" state for that long instead of a blink
+            if self._scan_timer is not None:
+                GLib.source_remove(self._scan_timer)
+            self._scan_timer = GLib.timeout_add(SCAN_BUSY_MS, self._scan_finished)
             epoch = self._wifi_epoch
             self.runner.run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY",
                              "device", "wifi", "list", "--rescan", "no"],
                             lambda o, e, r: self._wifi_list_ready(o, e, r, epoch))
 
         self.runner.run(["nmcli", "device", "wifi", "rescan"], done, timeout=25)
+
+    def _scan_finished(self):
+        self._scan_timer = None
+        self._scanning = False
+        self._wifi_status()
+        return False
 
     def _connect_wifi(self, ssid):
         net = next((n for n in self.wifi_nets if n["ssid"] == ssid), None)
@@ -1341,10 +1364,10 @@ class Panel(Gtk.Window):
         if getattr(self, "bt_title", None) is not None:
             if bt.scanning:
                 self.bt_title.set_text("Bluetooth devices · scanning…")
+            elif not getattr(self, "_bt_auto", True):
+                self.bt_title.set_text("Bluetooth devices · scan stopped")
             else:
-                self.bt_title.set_text(
-                    "Bluetooth devices · auto-scan every %ds"
-                    % (PAGE_TICK_S * AUTO_RESCAN_EVERY))
+                self.bt_title.set_text("Bluetooth devices · live")
         self._clear(self.bt_list)
         if on is None:
             self.bt_list.add(self._row("Reading the adapter state…", ""))
@@ -1376,41 +1399,56 @@ class Panel(Gtk.Window):
                 action = (lambda _r, d=dev: self._bt_device(d, "Pair"))
             self.bt_list.add(self._row(dev["name"], sub, icon="\uf293",
                                        on_click=action, action=unpair))
-        self.bt_list.add(self._row("scan for devices" if not bt.scanning
-                                   else "stop scanning",
-                                   "auto-scan every %ds while this page is open"
-                                   % (PAGE_TICK_S * AUTO_RESCAN_EVERY),
+        self.bt_list.add(self._row("stop scanning" if bt.scanning
+                                   else "scan for devices",
+                                   "keeps scanning while this page is open"
+                                   if bt.scanning else "start the radio again",
                                    on_click=lambda _r: self._bt_scan()))
         self.bt_list.add(self._row("open bluetooth manager", "blueman-manager",
                                    on_click=lambda _r: self._launch(["blueman-manager"])))
+        # the adapter may only become known after the first D-Bus load ->
+        # start discovering as soon as we can
+        self._bt_scan_burst()
 
     def _bt_scan(self):
         bt = self._bt()
         if bt.scanning:
             bt.stop_discovery()
+            self._bt_auto = False
         else:
             # a manual scan runs as long as the user wants it
             if self._bt_burst_timer is not None:
                 GLib.source_remove(self._bt_burst_timer)
                 self._bt_burst_timer = None
+            self._bt_auto = True
             bt.start_discovery()
         self._bt_updated()
 
     def _bt_scan_burst(self):
-        """a short discovery burst while the page is open"""
+        """keep discovering while the page is open (BLE scanning is
+        receive-only and does not disturb the wifi link)"""
         bt = self._bt()
         if bt.scanning or bt.adapter_on is False:
             return
-        bt.start_discovery()
+        if not getattr(self, "_bt_auto", True):
+            return
         if self._bt_burst_timer is not None:
-            GLib.source_remove(self._bt_burst_timer)
+            return                      # a burst is already running
+        if self.stack.get_visible_child_name() != "bt":
+            return                      # only scan while the page is open
+        if bt.adapter_path is None:
+            return                      # the adapter is not known yet
+        bt.start_discovery()
+        if not bt.scanning:
+            return                      # the scan did not start
         self._bt_burst_timer = GLib.timeout_add_seconds(
             BT_SCAN_BURST_S, self._bt_burst_end)
 
     def _bt_burst_end(self):
         self._bt_burst_timer = None
-        self._bt().stop_discovery()
-        self._bt_updated()
+        bt = self._bt()
+        bt.stop_discovery()
+        self._bt_updated()      # the render restarts the burst -> continuous
         return False
 
     def _bt_device(self, dev, action):

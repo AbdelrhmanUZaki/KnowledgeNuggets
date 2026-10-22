@@ -223,13 +223,18 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
     button (with confirmation) that removes the device and its keys.
     `blueman-manager` stays available as the advanced fallback.
   - *The lists refresh themselves* (nothing runs when the panel is closed):
-    the Wi-Fi list re-reads the NetworkManager cache every **5 s** and runs an
-    active radio scan every **30 s** while the page is open — NetworkManager
-    only learns about new APs after a real scan, so the cache alone is not
-    enough. Bluetooth needs no polling (BlueZ pushes every change over D-Bus);
-    it runs a **15 s discovery burst every 30 s** while the page is open. The
-    page title shows the state ("auto-scan every 30s" / "scanning…"), and the
-    manual rows are still there for a one-off scan.
+    opening the Wi-Fi page **scans immediately**, and then the page scans
+    again every **15 s** while it is open — NetworkManager only learns about
+    new APs after a real scan, so the cache alone is not enough. 15 s is the
+    interval wpa_supplicant's own background scan uses, and it matters: a scan
+    takes the radio off your AP's channel for a few seconds (measured here:
+    ping to the gateway goes from 1.2 ms to ~42 ms, peak 109 ms, no loss), so
+    scanning every 5 s would hurt games and calls. Bluetooth needs no polling
+    (BlueZ pushes every change over D-Bus) and keeps **discovering
+    continuously** while its page is open — BLE scanning is receive-only and
+    does not touch the Wi-Fi link. The page title shows the state ("live
+    (scan every 15s)" / "scanning…" / "live"), and the manual rows are still
+    there for a one-off scan.
   - *Sliders*: volume and brightness apply **while you drag** (50 ms / 80 ms
     throttle, flushed on release) and show a live percentage; media keys and
     gestures are reflected while the panel is open.
