@@ -1,0 +1,50 @@
+diff --git a/river/LockManager.zig b/river/LockManager.zig
+index f2a43d7..41aeb20 100644
+--- a/river/LockManager.zig
++++ b/river/LockManager.zig
+@@ -236,6 +236,45 @@ fn handleDestroy(listener: *wl.Listener(void)) void {
+     manager.destroy.link.remove();
+ 
+     manager.lock = null;
++
++    // The lock client died while the session was locked (or on its way
++    // there).  Without this the session would stay locked forever: a black
++    // screen with only the mouse cursor and no way out -- the lock state
++    // lives in the compositor, so a VT switch does not reset it.  The
++    // protocol explicitly allows the compositor to release the session when
++    // the lock client goes away.
++    if (manager.state != .unlocked) {
++        manager.lock_surfaces_timer.timerUpdate(0) catch {};
++        manager.state = .unlocked;
++
++        log.info("lock client died - session unlocked", .{});
++
++        {
++            var it = server.root.active_outputs.iterator(.forward);
++            while (it.next()) |output| {
++                if (output.locked_content.node.enabled) output.locked_content.node.setEnabled(false);
++                if (!output.normal_content.node.enabled) output.normal_content.node.setEnabled(true);
++            }
++        }
++
++        if (build_options.xwayland) {
++            server.root.layers.override_redirect.node.setEnabled(true);
++        }
++
++        {
++            var it = server.input_manager.seats.iterator(.forward);
++            while (it.next()) |seat| {
++                seat.setFocusRaw(.none);
++
++                // Exit locked mode
++                seat.enterMode(seat.prev_mode_id);
++            }
++        }
++
++        server.root.applyPending();
++        return;
++    }
++
+     if (manager.state == .waiting_for_lock_surfaces) {
+         manager.state = .waiting_for_blank;
+         manager.lock_surfaces_timer.timerUpdate(0) catch {};

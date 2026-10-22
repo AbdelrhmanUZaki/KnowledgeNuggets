@@ -97,6 +97,19 @@ build_compositor() {
     https://codeberg.org/river/river-classic.git
   cd river-classic
   git fetch --tags --quiet || true
+  # our patches on top of upstream (session lock: release the session when
+  # the lock client dies -- without it a killed locker leaves a black screen)
+  for p in "$HERE"/patches/*.patch; do
+      [ -f "$p" ] || continue
+      if git apply --check "$p" 2>/dev/null; then
+          log "applying $(basename "$p")"
+          git apply "$p"
+      elif git apply --reverse --check "$p" 2>/dev/null; then
+          log "already applied: $(basename "$p")"
+      else
+          warn "patch does not apply: $(basename "$p") (upstream changed?)"
+      fi
+  done
   log "building river-classic $RIVER_TAG"
   PKG_CONFIG_PATH="$PREFIX/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH:-}" \
     zig build -Doptimize=ReleaseFast --prefix "$PREFIX"
