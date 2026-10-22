@@ -114,10 +114,16 @@ TAP_MAX_S = 0.45           # whole gesture must be shorter than this
 TAP_MOVE_FRAC = 0.020      # ... and no finger may wander more than 2% of the pad
 SWIPE_MIN_FRAC = 0.030     # vertical travel that turns a touch into a swipe
 SWIPE_STEP_FRAC = 0.080    # pad travel per volume step
+BRIGHT_STEP_FRAC = 0.080   # pad travel per brightness step
 SWIPE_LOCK = 1.6           # |dy| must exceed this * |dx|
 SWIPE_HOLD_S = 0.040       # minimum time between volume steps
+BRIGHT_HOLD_S = 0.080      # ... and between brightness steps
 MAX_STEPS_PER_FRAME = 4
+MAX_BRIGHT_STEPS_PER_FRAME = 3
 VOLUME_STEP = 3            # percent per step
+BRIGHTNESS_STEP = 2        # percent per step (brightness.sh uses 2% as well)
+# which vertical swipe belongs to which finger count
+SWIPE_FINGERS = {3: "volume", 4: "brightness"}
 TAP_ACTIONS = {3: "back", 4: "forward"}
 
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME",
@@ -169,6 +175,8 @@ class Engine:
         self.worst_move = 0.0
         self.saw_click = False
         self.swiping = False
+        self.swipe_kind = None
+        self.swipe_fingers = 0
         self.swipe_x0 = None
         self.swipe_y0 = None
         self.fired_steps = 0
@@ -219,17 +227,14 @@ class Engine:
                     if tap:
                         out.append(("tap", tap))
                     return out
-                if len(self.slots) != 3:
-                    # a 3-finger swipe only exists while exactly 3 fingers are down
-                    self.swipe_x0 = self.swipe_y0 = None
+                self._swipe_arity()
                 return out
             # new finger
             self.slots[self.slot] = [None, None, None, None]
             if self.started is None:
                 self.started = now
             self.max_count = max(self.max_count, len(self.slots))
-            if len(self.slots) != 3:
-                self.swipe_x0 = self.swipe_y0 = None
+            self._swipe_arity()
             return out
 
         if code in (ABS_MT_POSITION_X, ABS_MT_POSITION_Y):
@@ -247,13 +252,32 @@ class Engine:
 
         return out
 
+    def _swipe_arity(self):
+        """track how many fingers are down; a swipe restarts when it changes.
+
+        3 fingers = volume, 4 fingers = brightness.  The reference point is
+        taken again whenever the finger count changes, so a palm landing in
+        the middle of a swipe cannot bend it.
+        """
+        count = len(self.slots)
+        if count == self.swipe_fingers:
+            return
+        self.swipe_fingers = count if count in (3, 4) else 0
+        self.swipe_x0 = self.swipe_y0 = None
+        self.swiping = False
+        self.swipe_kind = None
+        self.fired_steps = 0
+
     def _swipe_steps(self, now):
-        if self.saw_click or len(self.slots) != 3:
+        if self.saw_click or len(self.slots) not in (3, 4):
             return []
-        if len(self._coords()) != 3:
+        if len(self._coords()) != len(self.slots):
             return []
         if self.swipe_x0 is None:
             self.swipe_x0, self.swipe_y0 = self._avg_x(), self._avg_y()
+            return []
+        kind = self.swipe_kind or SWIPE_FINGERS.get(self.swipe_fingers)
+        if kind is None:
             return []
         dy = self._avg_y() - self.swipe_y0
         dx = self._avg_x() - self.swipe_x0
@@ -262,14 +286,23 @@ class Engine:
                     abs(dy) < SWIPE_LOCK * abs(dx):
                 return []
             self.swiping = True
-        want = int(abs(dy) / (SWIPE_STEP_FRAC * self.y_range))
-        if want <= self.fired_steps or now - self.last_step_t < SWIPE_HOLD_S:
+            self.swipe_kind = kind
+        if kind == "brightness":
+            frac = BRIGHT_STEP_FRAC
+            hold = BRIGHT_HOLD_S
+            cap = MAX_BRIGHT_STEPS_PER_FRAME
+        else:
+            frac = SWIPE_STEP_FRAC
+            hold = SWIPE_HOLD_S
+            cap = MAX_STEPS_PER_FRAME
+        want = int(abs(dy) / (frac * self.y_range))
+        if want <= self.fired_steps or now - self.last_step_t < hold:
             return []
-        n = min(want - self.fired_steps, MAX_STEPS_PER_FRAME)
+        n = min(want - self.fired_steps, cap)
         self.fired_steps = want
         self.last_step_t = now
-        step = 1 if dy < 0 else -1          # finger up -> volume up
-        return [("volume", step * n)]
+        step = 1 if dy < 0 else -1          # finger up -> brighter / louder
+        return [(kind, step * n)]
 
     def _finish(self, now):
         tap = None
@@ -485,12 +518,28 @@ def volume(steps):
         pass
 
 
+def brightness(steps):
+    """move the backlight by `steps` steps of ~2% in one logind call"""
+    if not steps:
+        return
+    script = os.path.expanduser("~/.config/waybar/brightness.sh")
+    try:
+        # spawned, not waited for: the gesture loop must not stall on logind
+        subprocess.Popen([script, "bump", "%d" % steps],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception:
+        pass
+
+
 def dispatch(mouse, action):
     if action is None:
         return
     if action[0] == "volume":
         volume(action[1])
         log("volume %s" % ("up" if action[1] > 0 else "down"))
+    elif action[0] == "brightness":
+        brightness(action[1])
+        log("brightness %s" % ("up" if action[1] > 0 else "down"))
     elif action[0] == "tap":
         log("tap -> %s" % action[1])
         button = BTN_SIDE if action[1] == "back" else BTN_EXTRA
@@ -733,7 +782,8 @@ def selftest():
             t += 0.01
         taps = [a[1] for a in acts if a[0] == "tap"]
         vol = sum(a[1] for a in acts if a[0] == "volume")
-        return taps, vol, click_btn
+        bri = sum(a[1] for a in acts if a[0] == "brightness")
+        return taps, vol, bri, click_btn
 
     cases = [
         (3, 0, "3-finger tap -> back", "back", 0),
@@ -742,19 +792,26 @@ def selftest():
         (2, 0, "2-finger tap -> nothing (libinput does it)", None, 0),
         (3, -120, "3-finger swipe up -> volume up", None, 1),
         (3, 120, "3-finger swipe down -> volume down", None, -1),
+        (4, -120, "4-finger swipe up -> brightness up", None, 0),
+        (4, 120, "4-finger swipe down -> brightness down", None, 0),
     ]
     for fingers, dy, label, want_tap, want_vol_sign in cases:
-        taps, vol, _ = gesture(fingers, dy=dy)
+        taps, vol, bri, _ = gesture(fingers, dy=dy)
         ok = (taps == ([want_tap] if want_tap else []) and
               (vol == 0 if want_vol_sign == 0 else
                (vol > 0 if want_vol_sign > 0 else vol < 0)))
-        print("%-46s %s   taps=%s volume=%+d" %
-              (label, "ok " if ok else "FAIL", taps, vol))
+        if fingers == 4 and dy:
+            # a 4-finger swipe must drive the brightness, never the volume
+            ok = ok and bri != 0 and (bri > 0) == (dy < 0)
+        if fingers == 3 and dy:
+            ok = ok and bri == 0
+        print("%-46s %s   taps=%s volume=%+d brightness=%+d" %
+              (label, "ok " if ok else "FAIL", taps, vol, bri))
         if not ok:
             failures.append(label)
 
     # a moving 3-finger touch must never also register as a tap
-    taps, vol, _ = gesture(3, dy=-45, duration=0.0)
+    taps, vol, bri, _ = gesture(3, dy=-45, duration=0.0)
     ok = not taps and vol == 0
     print("%-46s %s   taps=%s volume=%+d" %
           ("moving 3-finger touch is not a tap", "ok " if ok else "FAIL",
@@ -762,10 +819,19 @@ def selftest():
     if not ok:
         failures.append("moving 3-finger touch is not a tap")
 
+    # a 4-finger swipe must not turn into the 4-finger "forward" tap
+    taps, vol, bri, _ = gesture(4, dy=-120)
+    ok = not taps and bri != 0
+    print("%-46s %s   taps=%s brightness=%+d" %
+          ("4-finger swipe is not a forward tap", "ok " if ok else "FAIL",
+           taps, bri))
+    if not ok:
+        failures.append("4-finger swipe is not a forward tap")
+
     # physical clicks: 1 = left, 2 = right, 3 = right
     for fingers, want in ((1, BTN_LEFT), (2, BTN_RIGHT), (3, BTN_RIGHT),
                           (4, BTN_RIGHT)):
-        taps, vol, btn = gesture(fingers, click=True)
+        taps, vol, _bri, btn = gesture(fingers, click=True)
         ok = (taps == [] and btn == want)
         print("%-46s %s   button=%s" %
               ("%d-finger physical click -> %s" %
@@ -775,7 +841,7 @@ def selftest():
             failures.append("%d-finger click" % fingers)
 
     # slow 3-finger rest is not a tap
-    taps, vol, _ = gesture(3, duration=0.8)
+    taps, vol, _bri, _ = gesture(3, duration=0.8)
     ok = not taps
     print("%-46s %s   taps=%s" %
           ("slow 3-finger rest is not a tap", "ok " if ok else "FAIL", taps))

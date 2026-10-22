@@ -19,6 +19,9 @@ case "$1" in
     up)   n=$((cur + step)) ;;
     down) n=$((cur - step)) ;;
     set)  [ -n "$2" ] && n=$((mx * $2 / 100)) || n=$cur ;;
+    # bump <signed steps>: move by n * step (~2% each) in ONE logind call.
+    # The gesture daemon uses this so a swipe does not spawn one busctl per 2%.
+    bump) n=$((cur + step * ${2:-1})) ;;
     *)    n=$cur ;;
 esac
 [ "$n" -lt "$min" ] && n=$min

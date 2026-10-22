@@ -32,11 +32,13 @@ case "$choice" in
         ;;
     *)
         ssid=$(printf '%s' "$choice" | cut -f2 | sed 's/^✓ *//')
-        if nmcli device wifi connect "$ssid" >/dev/null 2>&1; then
+        # a saved profile or an open network connects straight away; anything
+        # else needs the password, which the helper asks for on stdin
+        if nmcli --wait 20 device wifi connect "$ssid" >/dev/null 2>&1; then
             notify-send "WiFi ✅" "connected: $ssid" 2>/dev/null
         else
             echo "$ssid" > "$CHOOSE_FILE"
-            foot -e "$HOME/.config/river/wifi-connect.sh" &
+            foot -e "$HOME/.config/river/wifi-connect.sh" "$ssid" &
         fi
         ;;
 esac
