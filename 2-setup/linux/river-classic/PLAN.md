@@ -1,7 +1,7 @@
 # river-classic — System Menu, Wi-Fi/Bluetooth flows, live sliders, 4-finger brightness
 
-**Status:** planned, not implemented
-**Date:** 2026-07-22
+**Status:** **implemented** (see §10 for what landed and where it deviates)
+**Date:** 2026-07-22 (plan) · implemented 2026-07-22
 **Scope:** `config/river/system-panel.py`, `config/river/wifi-connect.sh`, `config/river/wifi-pick.sh`,
 `config/river/gestures.py`, `config/waybar/brightness.sh`, docs
 **Related:** [README.md](README.md) (design contract, file table), [PROGRESS.md](PROGRESS.md) (master log)
@@ -162,7 +162,7 @@ made discoverable automatically.
 
 ## 4. Implementation
 
-### Phase 1 — async panel core, live sliders, fast first paint
+### Phase 1 — async panel core, live sliders, fast first paint  *(done)*
 
 **Files:** `config/river/system-panel.py`
 
@@ -237,7 +237,7 @@ def _pump_vol(self):
 
 **Commit:** `river-classic: async panel core + live volume/brightness sliders`
 
-### Phase 2 — Wi-Fi flow
+### Phase 2 — Wi-Fi flow  *(done)*
 
 **Files:** `config/river/system-panel.py`, `config/river/wifi-connect.sh`, `config/river/wifi-pick.sh`
 
@@ -295,7 +295,7 @@ nmcli --ask --wait 30 device wifi connect "$ssid"
 
 **Commit:** `river-classic: correct Wi-Fi connect flow with in-panel password prompt`
 
-### Phase 3 — Bluetooth via BlueZ D-Bus
+### Phase 3 — Bluetooth via BlueZ D-Bus  *(done)*
 
 **File:** `config/river/system-panel.py` (optionally a helper module next to it)
 
@@ -350,7 +350,7 @@ nmcli --ask --wait 30 device wifi connect "$ssid"
 
 **Commit:** `river-classic: Bluetooth over BlueZ D-Bus with an in-panel pairing agent`
 
-### Phase 4 — 4-finger brightness gesture
+### Phase 4 — 4-finger brightness gesture  *(done)*
 
 **Files:** `config/river/gestures.py`, `config/waybar/brightness.sh`
 
@@ -399,7 +399,7 @@ bump) n=$((cur + step * $2)) ;;      # step = mx/50 ≈ 2 %
 
 **Commit:** `river-classic: 4-finger vertical swipe controls brightness`
 
-### Phase 5 — verification, docs, cleanup
+### Phase 5 — verification, docs, cleanup  *(in progress)*
 
 - Re-verify the whole matrix in §5.
 - README: new Wi-Fi/Bluetooth behaviour, 4-finger brightness, corrected note about the
@@ -520,3 +520,54 @@ bluetoothctl devices Paired
 bluetoothctl devices Connected
 busctl --system call org.bluez / org.freedesktop.DBus.ObjectManager GetManagedObjects
 ```
+
+---
+
+## 10. Implementation notes (what actually landed)
+
+Commits: `ef14343` (panel), `5e2cd9c` (gesture + scripts), plus the documentation commits.
+
+### Landed as planned
+
+| Plan item | Where | Notes |
+|---|---|---|
+| Async command layer, no blocking on the GTK thread | `system-panel.py` (`Runner`) | `Gio.Subprocess` + `communicate_utf8_async`; per-command timeout; live processes force-exited on close |
+| Split fast/slow refresh, tiles patched as answers arrive | `system-panel.py` (`_refresh_fast` / `_refresh_async`) | panel paints immediately |
+| Live sliders with throttle + percentage labels + read-back | `system-panel.py` (`_on_vol`, `_on_bri`, `_poll_hardware`) | 50 ms volume / 80 ms brightness |
+| Wi-Fi: saved/open/secured/enterprise decision tree | `system-panel.py` (`_connect_wifi`) | saved profiles resolved per SSID with proper quoting |
+| In-panel password modal | `system-panel.py` (`_ask_password`, `_open_modal`) | mask, show/hide, inline error, retry; layer-shell keyboard mode + dismissal suppression |
+| Secret over stdin, argv only as fallback | `system-panel.py` (`_connect_with_password`) | `nmcli --ask` reads the secret from the pipe |
+| Async rescan with a "Scanning…" row, disk-cached list | `system-panel.py` (`_rescan_wifi`, `_read_wifi_cache`) | `$STATE/wifi-list` |
+| BlueZ over D-Bus, live updates, in-panel pairing agent | `system-panel.py` (`Bt`) | `GetManagedObjects` + `PropertiesChanged` + `org.bluez.Agent1` |
+| 4-finger swipe = brightness, batched | `gestures.py`, `brightness.sh bump` | 3 fingers = volume, 4-finger tap = forward |
+| Terminal fallback really asks for a password | `wifi-connect.sh`, `wifi-pick.sh` | `read -s` + `nmcli --ask` |
+
+### Deviations from the plan (and why)
+
+1. **The system bus connection is opened synchronously** (`Gio.bus_get_sync`, ~7 ms)
+   instead of asynchronously. PyGObject cannot finish an async `g_bus_get`:
+   `call_finish` needs a connection instance, but `g_bus_get` delivers the
+   connection through the result object. The call is lazy — it happens when the
+   Bluetooth page is opened, not when the panel starts.
+2. **The Wi-Fi list is cached on disk** (`$STATE/wifi-list`) in addition to the
+   in-memory cache. `nmcli device wifi list --rescan no` can take 1.5 s+ while a
+   scan is running, so the page shows the last known list immediately instead of
+   a "Loading…" row.
+3. **The Bluetooth list is throttled** to two rebuilds per second. A scan emits
+   RSSI updates continuously, and rebuilding the rows on every signal was
+   wasteful.
+4. **A diagnostic hook was added**: `RIVER_PANEL_OPEN=wifi|bt` opens a page
+   directly, and `--check` runs the parser self-test without a display. Both
+   are used by the verification script.
+5. **The plan's "one `nmcli` per SSID" for saved profiles** turned out to be the
+   right call, but the first implementation broke on SSIDs containing spaces
+   (shell word splitting); the profile names are now passed as a single argv
+   element.
+
+### Still to verify by hand (hardware / real devices)
+
+- [ ] A secured Wi-Fi network without a saved profile → password dialog → connect.
+- [ ] Wrong password → inline error, retry, no profile left behind.
+- [ ] An unpaired Bluetooth device → scan → pair → passkey/confirm prompt → connect.
+- [ ] 4-finger swipe up/down changes the brightness by a sensible amount.
+- [ ] Slider drags feel smooth and the bar follows live.

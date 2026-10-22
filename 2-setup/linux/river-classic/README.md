@@ -67,18 +67,18 @@ Quick Settings; the back button sits in the header.
 | File | Role |
 |---|---|
 | `config/river/init` | session bootstrap: paths, dbus env, keybinds, bar/dunst/swaybg, rivertile |
-| `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, sliders, session row |
+| `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
 | `config/river/quick-settings.sh` | entry point for the panel (falls back to the dmenu) |
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
-| `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt |
+| `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt (the secret goes in over stdin, never on the command line) |
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
-| `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, physical press 1 = left / 2–3 = right |
+| `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, 4-swipe brightness, physical press 1 = left / 2–3 = right |
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
 | `config/waybar/style.css` | the solarized dark theme (GNOME-style flat surface) |
-| `config/waybar/brightness.sh` | brightness via **logind** `SetBrightness` (±2% / absolute) |
+| `config/waybar/brightness.sh` | brightness via **logind** `SetBrightness` (±2% / absolute, `bump` for gestures) |
 | `config/waybar/notify.sh` | DND indicator (visible only while DND is on) |
 | `config/waybar/bt-toggle.sh` | Bluetooth adapter power (also `status` mode) |
 | `PLAN.md` | reviewed plan for the menu rework (async panel, Wi-Fi/Bluetooth flows, live sliders, 4-finger brightness) |
@@ -146,6 +146,16 @@ Tags are on **Alt** (dwm muscle memory), not Super.
   `$XDG_SESSION_ID`. Also, `loginctl show-session -p Active -p Seat -p User --value`
   prints properties in its own order (User, Seat, Active), not the `-p` order —
   query each property separately when matching a session.
+- **PyGObject cannot finish an async `Gio.bus_get`** (`call_finish` needs an
+  instance, but `g_bus_get` hands the connection over through the result) —
+  use `Gio.bus_get_sync` (a local socket connect, ~7 ms) and keep it lazy.
+- **`GetManagedObjects` delivers its values already unpacked**, while
+  `PropertiesChanged` delivers them as `GLib.Variant` — accept both, or every
+  property silently reads as "false".
+- **The object manager lives on the root path** `/` of `org.bluez`, not on
+  `/org/bluez`; the agent manager is the one on `/org/bluez`.
+- **`Gio.DBusConnection.register_object` is deprecated**; the replacement
+  `register_object_with_closures2` takes one argument more (the user data).
 - **A GtkBox has no "box" style class** — `.box.panel` never matches; use `.panel`.
 - **dash needs `; }`** to close a one-line function body (`f() { echo hi }` is a
   syntax error that swallows the rest of the file).
@@ -168,10 +178,13 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   mouse keeps its normal wheel direction and rate. Tune the scroll speed live with
   `~/.config/river/scroll-speed.sh <factor>` (1.0 = stock, 0.3 = current).
 - **Touchpad gestures** (`config/river/gestures.py`):
-  3-finger tap = back, 4-finger tap = forward, 3-finger swipe up/down = volume,
-  and physical clicks map 1 finger = left, 2 or 3 fingers = right. The daemon
-  mirrors the pad through uinput so libinput keeps doing acceleration, palm
-  rejection, DWT, tap-to-click, 2-finger scrolling and tap-and-drag.
+  3-finger tap = back, 4-finger tap = forward, **3-finger swipe up/down = volume,
+  4-finger swipe up/down = brightness**, and physical clicks map 1 finger = left,
+  2 or 3 fingers = right. The daemon mirrors the pad through uinput so libinput
+  keeps doing acceleration, palm rejection, DWT, tap-to-click, 2-finger scrolling
+  and tap-and-drag. The swipe reference restarts whenever the finger count
+  changes, so a palm landing mid-gesture cannot bend it, and the steps are
+  batched into one `brightness.sh bump` / `wpctl` call per frame.
   One documented side effect: libinput still emits its own **middle click on a
   3-finger tap** (plus the back action); 1/2-finger taps are untouched.
   Install the udev rule once (the daemon is already spawned by `init`):
@@ -189,6 +202,30 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   (a second `...Touchpad` device appears while the mirror is active).
   `python3 ~/.config/river/gestures.py --selftest` runs the engine tests without
   hardware; `--off` restores stock clickfinger if an old daemon was interrupted.
+- **System menu** (`config/river/system-panel.py`): every external command runs
+  through `Gio.Subprocess`, so **nothing blocks the GTK thread** — the menu
+  paints instantly and the tiles fill in as the answers arrive.
+  - *Wi-Fi*: the list comes from the NetworkManager cache (kept on disk, so it
+    shows up immediately) and is refreshed in the background; "rescan" runs
+    asynchronously and shows a **Scanning…** row. Clicking a network connects
+    it when it is **saved or open**; a **secured network without a saved
+    profile** opens an in-panel password dialog (masked, show/hide, inline
+    error, retry). The secret is handed to `nmcli` over stdin, so it does not
+    appear in the process list. Enterprise networks open
+    `nm-connection-editor`.
+  - *Bluetooth*: BlueZ over D-Bus — devices, discovery and pairing all live
+    in the panel, and the panel exports an `org.bluez.Agent1`, so a device that
+    asks for a **passkey, PIN or confirmation** gets an in-panel prompt
+    instead of failing. Paired devices connect/disconnect, unpaired ones are
+    paired first and then connected. `blueman-manager` stays available as the
+    advanced fallback.
+  - *Sliders*: volume and brightness apply **while you drag** (50 ms / 80 ms
+    throttle, flushed on release) and show a live percentage; media keys and
+    gestures are reflected while the panel is open.
+  - Diagnostics: `~/.local/state/river-classic/panel.log`, and
+    `RIVER_PANEL_OPEN=wifi|bt python3 ~/.config/river/system-panel.py` opens a
+    page directly. `python3 ~/.config/river/system-panel.py --check` runs the
+    parser self-test without a display.
 - The `Z`-icon in the tray is the ZCode editor registering a tray item.
 - Everything is hot-editable: `riverctl map ...` for keybinds, the CSS for the bar,
   the Python for the panel — no recompile, no relogin.
