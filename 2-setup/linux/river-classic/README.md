@@ -47,6 +47,19 @@ The Wi-Fi and Bluetooth tiles each carry a small **corner chevron** that expands
 panel into a list page — available networks / paired devices — exactly like GNOME's
 Quick Settings; the back button sits in the header.
 
+The two network indicators name what they are connected to, so the bar alone
+answers "am I online, and on what?":
+
+| state | Wi-Fi | Bluetooth |
+|---|---|---|
+| connected | `📶 OrangeDSL-batekh` | `ᛒ soundcore R50i VI` |
+| radio on, nothing connected | `📶 offline` | `ᛒ no device` |
+| radio off | `📶 off` (grey) | `ᛒ off` (grey) |
+
+`{essid}` and `{device_alias}` are waybar's own placeholders, so this costs
+nothing to maintain; the tooltips keep the details (signal strength, IP).
+`kill -USR2 $(pgrep -x waybar)` reloads the bar config without a restart.
+
 ```
 ┌ 1 2 3 4 5 6 7 8 9   window title          Wed 21 Oct  16:29      🔊 ☀ ⇅ ᛒ 🔋 ⏻
 └────────────────────────── workspaces ───────────┘           └─ state only ─┘

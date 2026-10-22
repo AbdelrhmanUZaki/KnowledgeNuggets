@@ -59,11 +59,11 @@
     },
 
     "network": {
-        "format-wifi":     "<span font_family='FontAwesome' size='128%'>\uf012</span>",
-        "format-ethernet": "<span font_family='FontAwesome' size='128%'>\uf1b6</span>",
-        "format-linked":   "<span font_family='FontAwesome' size='128%'>\uf012</span>",
-        "format-disconnected": "<span font_family='FontAwesome' size='128%'>\uf012</span>",
-        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf012</span>",
+        "format-wifi":     "<span font_family='FontAwesome' size='128%'>\uf012</span> {essid}",
+        "format-ethernet": "<span font_family='FontAwesome' size='128%'>\uf1b6</span> wired",
+        "format-linked":   "<span font_family='FontAwesome' size='128%'>\uf012</span> {essid}",
+        "format-disconnected": "<span font_family='FontAwesome' size='128%'>\uf012</span> offline",
+        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf012</span> off",
         "on-click": "$HOME/.config/river/quick-settings.sh",
         "on-click-right": "if nmcli radio wifi | grep -q enabled; then nmcli radio wifi off; else nmcli radio wifi on; fi",
         "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}\nclick = system menu · right-click = wifi on/off",
@@ -71,13 +71,13 @@
     },
 
     "bluetooth": {
-        "format": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
+        "format": "<span font_family='FontAwesome' size='128%'>\uf293</span> no device",
         "format-connected": "<span font_family='FontAwesome' size='128%'>\uf293</span> {device_alias}",
-        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
-        "format-off": "<span font_family='FontAwesome' size='128%'>\uf293</span>",
+        "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf293</span> off",
+        "format-off": "<span font_family='FontAwesome' size='128%'>\uf293</span> off",
         "on-click": "$HOME/.config/river/quick-settings.sh",
         "on-click-right": "blueman-manager",
-        "tooltip-format": "click = system menu · right-click = devices",
+        "tooltip-format": "bluetooth is on, nothing connected\nclick = system menu · right-click = devices",
         "tooltip-format-connected": "{device_alias}\nclick = system menu · right-click = manage devices"
     },
 
