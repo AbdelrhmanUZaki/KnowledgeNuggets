@@ -72,7 +72,7 @@ Quick Settings; the back button sits in the header.
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
 | `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt |
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
-| `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, 3-finger press = right |
+| `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, physical press 1 = left / 2–3 = right |
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
@@ -157,9 +157,10 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 
 - The bar renders on **every** output; the panel docks to the monitor under the pointer.
 - **Touchpad = GNOME parity** (`config/river/init`): tap-to-click (2-finger tap =
-  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag, and a
-  scroll factor of your choice — the touchpad only, so any external mouse keeps its
-  normal wheel direction and rate. Tune the speed live with
+  right click), clickfinger, natural scrolling, palm rejection, tap-and-drag,
+  pointer speed `pointer-accel 0.2` (libinput's 0.0 default felt too slow; touchpad
+  only), and a scroll factor of your choice — the touchpad only, so any external
+  mouse keeps its normal wheel direction and rate. Tune the scroll speed live with
   `~/.config/river/scroll-speed.sh <factor>` (1.0 = stock, 0.3 = current).
 - **Touchpad gestures** (`config/river/gestures.py`):
   3-finger tap = back, 4-finger tap = forward, 3-finger swipe up/down = volume,
@@ -177,7 +178,8 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   sudo udevadm trigger --subsystem-match=input
   sudo udevadm trigger --sysname-match=uinput
   ```
-  Then log out/in (or just wait — `init` respawns the daemon every 2 s). Check
+  Then log out/in so `init` starts the daemon (if it previously exited with
+  code 3, waiting alone will not restart it). Check
   `~/.local/state/river-classic/gestures.log` and `riverctl list-inputs`
   (a second `...Touchpad` device appears while the mirror is active).
   `python3 ~/.config/river/gestures.py --selftest` runs the engine tests without

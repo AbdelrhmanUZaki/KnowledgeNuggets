@@ -193,7 +193,8 @@ class Engine:
             self.swipe_x0 = self.swipe_y0 = None
 
     def _coords(self):
-        return [s for s in self.slots.values() if s[2] is not None]
+        return [s for s in self.slots.values()
+                if s[2] is not None and s[3] is not None]
 
     def _avg_y(self):
         pts = self._coords()
@@ -268,7 +269,7 @@ class Engine:
         self.fired_steps = want
         self.last_step_t = now
         step = 1 if dy < 0 else -1          # finger up -> volume up
-        return [("volume", step)] * n
+        return [("volume", step * n)]
 
     def _finish(self, now):
         tap = None
@@ -474,14 +475,14 @@ def wait_for_clone(clone, before, timeout=4.0):
 def volume(steps):
     if not steps:
         return
-    cmd = "%d%%+" % VOLUME_STEP if steps > 0 else "%d%%-" % VOLUME_STEP
-    for _ in range(abs(steps)):
-        try:
-            subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", cmd],
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                           timeout=4, check=False)
-        except Exception:
-            pass
+    pct = VOLUME_STEP * abs(steps)
+    cmd = "%d%%%s" % (pct, "+" if steps > 0 else "-")
+    try:
+        subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", cmd],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       timeout=4, check=False)
+    except Exception:
+        pass
 
 
 def dispatch(mouse, action):
@@ -489,6 +490,7 @@ def dispatch(mouse, action):
         return
     if action[0] == "volume":
         volume(action[1])
+        log("volume %s" % ("up" if action[1] > 0 else "down"))
     elif action[0] == "tap":
         log("tap -> %s" % action[1])
         button = BTN_SIDE if action[1] == "back" else BTN_EXTRA
@@ -636,7 +638,11 @@ def run(parent=None, gestures_only=False):
                     engine.note_click(value != 0)
                     if out is not None:
                         if value:
-                            active_btn = button_for_fingers(engine.click_count())
+                            fingers = engine.click_count()
+                            active_btn = button_for_fingers(fingers)
+                            log("click: %d finger(s) -> %s" %
+                                (fingers,
+                                 "right" if active_btn == BTN_RIGHT else "left"))
                             out += struct.pack(EVENT_FMT, sec, usec, EV_KEY,
                                                active_btn, 1)
                         elif active_btn is not None:
@@ -775,6 +781,27 @@ def selftest():
           ("slow 3-finger rest is not a tap", "ok " if ok else "FAIL", taps))
     if not ok:
         failures.append("slow 3-finger rest")
+
+    # a partial MT frame (all X before any Y) must not crash the daemon
+    try:
+        eng = Engine(1000, 1000)
+        t = 10.0
+        for i in range(3):
+            eng.feed_abs(ABS_MT_SLOT, i, t)
+            eng.feed_abs(ABS_MT_TRACKING_ID, 300 + i, t)
+        for i in range(3):
+            eng.feed_abs(ABS_MT_SLOT, i, t)
+            eng.feed_abs(ABS_MT_POSITION_X, 500 + i * 10, t)
+        for i in range(3):
+            eng.feed_abs(ABS_MT_SLOT, i, t)
+            eng.feed_abs(ABS_MT_POSITION_Y, 500, t)
+        ok = True
+    except Exception as exc:
+        ok = False
+        print("partial X-only frame: %s" % exc)
+    print("%-46s %s" % ("partial X-only frame does not crash", "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("partial X-only frame")
 
     print("\n%s" % ("all good" if not failures else "FAILURES: %s" % failures))
     return 1 if failures else 0
