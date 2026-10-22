@@ -59,6 +59,12 @@ except OSError:
 PROFILES = ["performance", "balanced", "power-saver"]
 PROFILE_ICON = {"performance": "\uf0e7", "balanced": "\uf013", "power-saver": "\uf186"}
 
+# how often the visible page refreshes itself, and how many ticks pass
+# between two active radio scans (only while the page is open)
+PAGE_TICK_S = 5
+AUTO_RESCAN_EVERY = 6            # 6 * 5 s = 30 s
+BT_SCAN_BURST_S = 15             # discovery burst length
+
 
 # ── pure (synchronous, fast) readers ────────────────────────────────────────
 def _split_terse(line):
@@ -626,6 +632,12 @@ class Panel(Gtk.Window):
         self.wifi_saved = {}
         self._wifi_cache = None
         self._wifi_epoch = 0
+        self._wifi_sig = None
+        self._scan_seq = 0
+        self._scanning = False
+        self._tick = 0
+        self._page_timer = None
+        self._bt_burst_timer = None
         self._bt_started = False
         self._bt_built_at = 0
         self._bt_timer = None
@@ -905,11 +917,13 @@ class Panel(Gtk.Window):
     def _wifi_page(self):
         box, lst = self._page_box("Available networks")
         self.wifi_list = lst
+        self.wifi_title = box.get_children()[0]
         return box
 
     def _bt_page(self):
         box, lst = self._page_box("Bluetooth devices")
         self.bt_list = lst
+        self.bt_title = box.get_children()[0]
         return box
 
     def _show_page(self, name):
@@ -923,14 +937,40 @@ class Panel(Gtk.Window):
             self._fill_wifi_list()
         elif name == "bt":
             self._fill_bt_list()
+            self._bt_scan_burst()
         else:
+            # leaving a list page: stop the radio work
+            self._bt().stop_discovery()
             self._refresh_async()
+
+    # ── automatic refreshing of the open list page ───────────────────────
+    def _page_tick(self):
+        """runs every PAGE_TICK_S while the panel is open"""
+        self._tick += 1
+        page = self.stack.get_visible_child_name()
+        if page == "wifi":
+            self._wifi_refresh(force=self._tick % AUTO_RESCAN_EVERY == 0)
+        elif page == "bt":
+            if self._tick % AUTO_RESCAN_EVERY == 0:
+                self._bt_scan_burst()
+        return True
+
+    def _wifi_refresh(self, force=False):
+        """re-read the NetworkManager cache (cheap) and scan the radio now
+        and then, but only while the page is open"""
+        epoch = self._wifi_epoch
+        self.runner.run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY",
+                         "device", "wifi", "list", "--rescan", "no"],
+                        lambda out, err, rc: self._wifi_list_ready(out, err, rc, epoch))
+        if force and not self._scanning:
+            self._rescan_wifi(quiet=True)
 
     # ── Wi-Fi ────────────────────────────────────────────────────────────
     def _fill_wifi_list(self):
         """cached list first, never a blocking rescan"""
         self._wifi_epoch += 1
         epoch = self._wifi_epoch
+        self._wifi_sig = None
         self._clear(self.wifi_list)
         # nmcli can take seconds while a scan is running, so show the last
         # known list from disk right away and refresh it in the background
@@ -943,6 +983,7 @@ class Panel(Gtk.Window):
                          "device", "wifi", "list", "--rescan", "no"],
                         lambda out, err, rc: self._wifi_list_ready(out, err, rc, epoch))
         self._load_saved_wifi()
+        self._wifi_status()
 
     def _read_wifi_cache(self):
         try:
@@ -966,6 +1007,13 @@ class Panel(Gtk.Window):
         if rc == 0:
             self._write_wifi_cache(self._wifi_cache)
         nets = parse_wifi_list(self._wifi_cache)
+        # redraw only when something really changed, otherwise the auto
+        # refresh would rebuild the rows (and steal the hover) every 5 s
+        signature = self._wifi_signature(nets)
+        if signature == self._wifi_sig:
+            self._wifi_status()
+            return
+        self._wifi_sig = signature
         self.wifi_nets = nets
         self._clear(self.wifi_list)
         if not nets:
@@ -1034,15 +1082,39 @@ class Panel(Gtk.Window):
         self.runner.run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show"],
                         got_profiles, timeout=8)
 
-    def _rescan_wifi(self):
-        self._wifi_epoch += 1
-        epoch = self._wifi_epoch
-        self._clear(self.wifi_list)
-        self.wifi_list.add(self._row("Scanning…", "this takes a few seconds"))
+    def _wifi_signature(self, nets):
+        """a compact fingerprint of the list, so we can skip a redraw"""
+        saved = self.wifi_saved
+        return "|".join("%s:%d:%d:%d" % (n["ssid"], n["signal"], n["in_use"],
+                                         1 if n["ssid"] in saved else 0)
+                         for n in nets)
+
+    def _wifi_status(self):
+        """the page title carries the scan state"""
+        if getattr(self, "wifi_title", None) is None:
+            return
+        if self._scanning:
+            self.wifi_title.set_text("Available networks · scanning…")
+        else:
+            self.wifi_title.set_text("Available networks · auto-scan every %ds"
+                                     % (PAGE_TICK_S * AUTO_RESCAN_EVERY))
+
+    def _rescan_wifi(self, quiet=False):
+        """active scan; quiet = keep the current list on screen"""
+        self._scan_seq += 1
+        seq = self._scan_seq
+        self._scanning = True
+        self._wifi_status()
+        if not quiet:
+            self._clear(self.wifi_list)
+            self.wifi_list.add(self._row("Scanning…", "this takes a few seconds"))
 
         def done(out, err, rc):
-            if epoch != self._wifi_epoch:
+            self._scanning = False
+            if seq != self._scan_seq:
                 return
+            self._wifi_status()
+            epoch = self._wifi_epoch
             self.runner.run(["nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY",
                              "device", "wifi", "list", "--rescan", "no"],
                             lambda o, e, r: self._wifi_list_ready(o, e, r, epoch))
@@ -1180,6 +1252,13 @@ class Panel(Gtk.Window):
         else:
             label, active = "Bluetooth off", False
         self._set_tile(self.t_bt, label, "\uf293", active)
+        if getattr(self, "bt_title", None) is not None:
+            if bt.scanning:
+                self.bt_title.set_text("Bluetooth devices · scanning…")
+            else:
+                self.bt_title.set_text(
+                    "Bluetooth devices · auto-scan every %ds"
+                    % (PAGE_TICK_S * AUTO_RESCAN_EVERY))
         self._clear(self.bt_list)
         if on is None:
             self.bt_list.add(self._row("Reading the adapter state…", ""))
@@ -1210,7 +1289,8 @@ class Panel(Gtk.Window):
                                        on_click=action))
         self.bt_list.add(self._row("scan for devices" if not bt.scanning
                                    else "stop scanning",
-                                   "discovery runs for 20 seconds",
+                                   "auto-scan every %ds while this page is open"
+                                   % (PAGE_TICK_S * AUTO_RESCAN_EVERY),
                                    on_click=lambda _r: self._bt_scan()))
         self.bt_list.add(self._row("open bluetooth manager", "blueman-manager",
                                    on_click=lambda _r: self._launch(["blueman-manager"])))
@@ -1220,8 +1300,29 @@ class Panel(Gtk.Window):
         if bt.scanning:
             bt.stop_discovery()
         else:
+            # a manual scan runs as long as the user wants it
+            if self._bt_burst_timer is not None:
+                GLib.source_remove(self._bt_burst_timer)
+                self._bt_burst_timer = None
             bt.start_discovery()
         self._bt_updated()
+
+    def _bt_scan_burst(self):
+        """a short discovery burst while the page is open"""
+        bt = self._bt()
+        if bt.scanning or bt.adapter_on is False:
+            return
+        bt.start_discovery()
+        if self._bt_burst_timer is not None:
+            GLib.source_remove(self._bt_burst_timer)
+        self._bt_burst_timer = GLib.timeout_add_seconds(
+            BT_SCAN_BURST_S, self._bt_burst_end)
+
+    def _bt_burst_end(self):
+        self._bt_burst_timer = None
+        self._bt().stop_discovery()
+        self._bt_updated()
+        return False
 
     def _bt_device(self, dev, action):
         bt = self._bt()
@@ -1612,6 +1713,11 @@ class Panel(Gtk.Window):
         self._mapped_at = time.monotonic()
         self._had_focus = False
         self._poller = GLib.timeout_add(1000, self._poll_hardware)
+        # the open list page refreshes itself (cache every 5 s, radio scan
+        # every 30 s) -- but only while the panel is open
+        if self._page_timer is None:
+            self._page_timer = GLib.timeout_add_seconds(PAGE_TICK_S,
+                                                        self._page_tick)
         # diagnostic hook: RIVER_PANEL_OPEN=wifi|bt opens that page directly
         page = os.environ.get("RIVER_PANEL_OPEN", "")
         if page in ("wifi", "bt"):
@@ -1715,6 +1821,12 @@ class Panel(Gtk.Window):
         if self._poller:
             GLib.source_remove(self._poller)
             self._poller = None
+        if self._page_timer:
+            GLib.source_remove(self._page_timer)
+            self._page_timer = None
+        if self._bt_burst_timer:
+            GLib.source_remove(self._bt_burst_timer)
+            self._bt_burst_timer = None
         self.hide()
         self.destroy()
         Gtk.main_quit()

@@ -219,6 +219,14 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
     instead of failing. Paired devices connect/disconnect, unpaired ones are
     paired first and then connected. `blueman-manager` stays available as the
     advanced fallback.
+  - *The lists refresh themselves* (nothing runs when the panel is closed):
+    the Wi-Fi list re-reads the NetworkManager cache every **5 s** and runs an
+    active radio scan every **30 s** while the page is open — NetworkManager
+    only learns about new APs after a real scan, so the cache alone is not
+    enough. Bluetooth needs no polling (BlueZ pushes every change over D-Bus);
+    it runs a **15 s discovery burst every 30 s** while the page is open. The
+    page title shows the state ("auto-scan every 30s" / "scanning…"), and the
+    manual rows are still there for a one-off scan.
   - *Sliders*: volume and brightness apply **while you drag** (50 ms / 80 ms
     throttle, flushed on release) and show a live percentage; media keys and
     gestures are reflected while the panel is open.
