@@ -10,7 +10,7 @@
 
     "modules-left":   ["river/tags", "river/window"],
     "modules-center": ["clock"],
-    "modules-right":  ["mpris", "pulseaudio", "backlight", "cpu", "memory", "custom/temp", "network", "bluetooth", "battery", "custom/notify", "tray", "custom/power"],
+    "modules-right":  ["mpris", "pulseaudio", "network", "custom/netspeed", "backlight", "cpu", "memory", "custom/temp", "bluetooth", "battery", "custom/notify", "tray", "custom/power"],
 
     "river": {
         "num-tags": 9
@@ -59,16 +59,25 @@
     },
 
     "network": {
-        "format-wifi":     "<span font_family='FontAwesome' size='128%'>\uf012</span> {essid} ↓{bandwidthDownBytes} ↑{bandwidthUpBytes}",
+        "format-wifi":     "<span font_family='FontAwesome' size='128%'>\uf012</span> {essid}",
         "format-ethernet": "<span font_family='FontAwesome' size='128%'>\uf1b6</span> wired",
         "format-linked":   "<span font_family='FontAwesome' size='128%'>\uf012</span> {essid}",
         "format-disconnected": "<span font_family='FontAwesome' size='128%'>\uf012</span> offline",
         "format-disabled": "<span font_family='FontAwesome' size='128%'>\uf012</span> off",
-        "interval": 2,
+        "interval": 3,
         "on-click": "$HOME/.config/river/quick-settings.sh",
         "on-click-right": "if nmcli radio wifi | grep -q enabled; then nmcli radio wifi off; else nmcli radio wifi on; fi",
-        "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}\n↓ {bandwidthDownBytes}/s  ↑ {bandwidthUpBytes}/s\nclick = system menu · right-click = wifi on/off",
+        "tooltip-format-wifi": "{essid} · {signalStrength}% · {ipaddr}\nclick = system menu · right-click = wifi on/off",
         "tooltip-format": "no connection\nclick = system menu · right-click = wifi on/off"
+    },
+
+    // throughput sits right after the wifi name; fixed-width output so the
+    // changing numbers never move the rest of the bar (see netspeed.sh)
+    "custom/netspeed": {
+        "exec": "$HOME/.config/waybar/netspeed.sh",
+        "interval": 2,
+        "tooltip": false,
+        "on-click": "$HOME/.config/river/quick-settings.sh"
     },
 
     "cpu": {

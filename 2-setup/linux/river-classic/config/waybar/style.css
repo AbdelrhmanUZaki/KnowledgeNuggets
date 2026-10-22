@@ -81,6 +81,7 @@ window#waybar {
 #memory,
 #custom-temp,
 #network,
+#custom-netspeed,
 #bluetooth,
 #battery,
 #custom-notify,
@@ -91,6 +92,20 @@ window#waybar {
     border-radius: 6px;
     color: #93a1a1;
     transition: background-color 120ms ease, color 120ms ease;
+}
+
+/* the throughput reads as part of the wifi label: no gap between them, and a
+   monospace font so the always-changing numbers never change the width */
+#network {
+    padding-right: 3px;
+    margin-right: 0;
+    border-radius: 6px 0 0 6px;
+}
+#custom-netspeed {
+    font-family: "Ubuntu Mono", "DejaVu Sans Mono", monospace;
+    padding: 0 7px 0 2px;
+    margin-left: 0;
+    border-radius: 0 6px 6px 0;
 }
 
 #mpris {
@@ -109,6 +124,7 @@ window#waybar {
 #memory:hover,
 #custom-temp:hover,
 #network:hover,
+#custom-netspeed:hover,
 #bluetooth:hover,
 #battery:hover,
 #custom-notify:hover,

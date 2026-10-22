@@ -61,11 +61,15 @@ nothing to maintain; the tooltips keep the details (signal strength, IP).
 `kill -USR2 $(pgrep -x waybar)` reloads the bar config without a restart.
 
 Next to them the bar carries the **system numbers**: CPU load, RAM use, the CPU
-package temperature and the **network speed** (`↓`/`↑` next to the Wi-Fi
-indicator). The temperature is a small custom module (`config/waybar/temp.sh`)
-because the kernel renumbers `hwmonN`/`thermal_zoneN` between boots — the
-script looks the sensor up by name instead. waybar's own `cpu`, `memory` and
-`network` modules do the rest.
+package temperature and, right after the Wi-Fi name, the **network speed**
+(`↓`/`↑`). The speed is a custom module (`config/waybar/netspeed.sh`) rather
+than the network module's own placeholders because its output is a fixed
+15-character string in a monospace font: the numbers change every 2 s, and a
+label whose width changed would drag the whole right-hand cluster of the bar
+with it. The temperature is the same story in reverse — a small custom module
+(`config/waybar/temp.sh`) because the kernel renumbers `hwmonN`/`thermal_zoneN`
+between boots, and the script looks the sensor up by name. waybar's own `cpu`
+and `memory` modules do the rest.
 
 ```
 ┌ 1 2 3 4 5 6 7 8 9   window title          Wed 21 Oct  16:29      🔊 ☀ ⇅ ᛒ 🔋 ⏻
@@ -102,6 +106,7 @@ script looks the sensor up by name instead. waybar's own `cpu`, `memory` and
 | `config/waybar/brightness.sh` | brightness via **logind** `SetBrightness` (±2% / absolute, `bump` for gestures) |
 | `config/waybar/notify.sh` | DND indicator (visible only while DND is on) |
 | `config/waybar/temp.sh` | CPU package temperature for the bar (finds the sensor by name) |
+| `config/waybar/netspeed.sh` | ↓/↑ throughput for the bar, fixed width so nothing moves |
 | `config/waybar/bt-toggle.sh` | Bluetooth adapter power (also `status` mode) |
 | `PLAN.md` | reviewed plan for the menu rework (async panel, Wi-Fi/Bluetooth flows, live sliders, 4-finger brightness) |
 
