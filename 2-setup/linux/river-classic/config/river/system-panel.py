@@ -1291,9 +1291,15 @@ class Panel(Gtk.Window):
     def _make_modal(self):
         self._modal_scrim = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self._modal_scrim.get_style_context().add_class("modal-scrim")
+        # show_all() would reveal the scrim and dim the whole panel, so it
+        # must opt out of it and only appear while a modal is open
+        self._modal_scrim.set_no_show_all(True)
         self._modal_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self._modal_card.get_style_context().add_class("modal-card")
-        self._modal_scrim.add(self._modal_card)
+        self._modal_card.set_halign(Gtk.Align.CENTER)
+        self._modal_card.set_valign(Gtk.Align.CENTER)
+        # pack with expand so the card is centred in the scrim
+        self._modal_scrim.pack_start(self._modal_card, True, True, 0)
         self.overlay.add_overlay(self._modal_scrim)
         self._modal_scrim.set_visible(False)
 
@@ -1324,8 +1330,8 @@ class Panel(Gtk.Window):
         buttons.pack_start(ok, False, False, 0)
         self._modal_card.pack_start(buttons, False, False, 0)
         self._modal_error_label.set_text("")
+        self._modal_card.show_all()
         self._modal_scrim.set_visible(True)
-        self._modal_scrim.show_all()
         self._modal_open = True
         self._set_keyboard_mode(_KB_EXCLUSIVE)
 
