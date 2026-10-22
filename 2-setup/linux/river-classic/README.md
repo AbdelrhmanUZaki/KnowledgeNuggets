@@ -60,6 +60,13 @@ answers "am I online, and on what?":
 nothing to maintain; the tooltips keep the details (signal strength, IP).
 `kill -USR2 $(pgrep -x waybar)` reloads the bar config without a restart.
 
+Next to them the bar carries the **system numbers**: CPU load, RAM use, the CPU
+package temperature and the **network speed** (`↓`/`↑` next to the Wi-Fi
+indicator). The temperature is a small custom module (`config/waybar/temp.sh`)
+because the kernel renumbers `hwmonN`/`thermal_zoneN` between boots — the
+script looks the sensor up by name instead. waybar's own `cpu`, `memory` and
+`network` modules do the rest.
+
 ```
 ┌ 1 2 3 4 5 6 7 8 9   window title          Wed 21 Oct  16:29      🔊 ☀ ⇅ ᛒ 🔋 ⏻
 └────────────────────────── workspaces ───────────┘           └─ state only ─┘
