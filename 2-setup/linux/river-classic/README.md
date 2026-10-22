@@ -81,6 +81,7 @@ Quick Settings; the back button sits in the header.
 | `config/waybar/brightness.sh` | brightness via **logind** `SetBrightness` (±2% / absolute) |
 | `config/waybar/notify.sh` | DND indicator (visible only while DND is on) |
 | `config/waybar/bt-toggle.sh` | Bluetooth adapter power (also `status` mode) |
+| `PLAN.md` | reviewed plan for the menu rework (async panel, Wi-Fi/Bluetooth flows, live sliders, 4-finger brightness) |
 
 ---
 
