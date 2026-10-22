@@ -757,6 +757,11 @@ class Panel(Gtk.Window):
         txt = Gtk.Label(label=label)
         txt.get_style_context().add_class("tile-label")
         btn._tile_label = txt
+        if sub:
+            # the tile gives room to the sub-button strip on its right, so a
+            # long name (an SSID) has to be shortened
+            txt.set_ellipsize(Pango.EllipsizeMode.END)
+            txt.set_max_width_chars(10)
         box.pack_start(ico, False, False, 0)
         box.pack_start(txt, False, False, 0)
         btn.add(box)
@@ -774,14 +779,16 @@ class Panel(Gtk.Window):
         sb.get_style_context().add_class("sub")
         sb.set_tooltip_text(sub[0])
         sl = Gtk.Label()
-        sl.set_markup("<span font_family='%s' size='9pt'>\uf105</span>" % FA)
+        sl.set_markup("<span font_family='%s' size='12pt'>\uf105</span>" % FA)
+        sl.set_valign(Gtk.Align.CENTER)
         sb.add(sl)
+        # a full-height strip on the right edge: a 17 px chevron in the corner
+        # was a target you could not hit
         sb.set_halign(Gtk.Align.END)
-        sb.set_valign(Gtk.Align.START)
-        sb.set_margin_top(3)
-        sb.set_margin_end(3)
+        sb.set_valign(Gtk.Align.FILL)
         sb.connect("clicked", sub[1])
         overlay.add_overlay(sb)
+        btn.get_style_context().add_class("has-sub")
         overlay._tile_button = btn
         return overlay
 
@@ -1999,15 +2006,17 @@ label.tile-label { color: #93a1a1; font-size: 11px; }
 button.session { border-radius: 7px; padding: 5px; }
 
 /* small corner button on a tile → expands into the list page */
+button.tile.has-sub { padding-right: 30px; }
 button.sub {
     background-color: transparent;
     background-image: none;
     border: none;
-    border-radius: 6px;
+    border-radius: 0;
+    border-top-right-radius: 9px;
+    border-bottom-right-radius: 9px;
     padding: 0;
-    min-width: 17px;
-    min-height: 17px;
-    color: #586e75;
+    min-width: 28px;
+    color: #93a1a1;
 }
 button.sub:hover { background-color: #0b4a58; color: #2aa198; }
 
