@@ -202,8 +202,9 @@ class Runner:
             if self.alive:
                 GLib.idle_add(cb, out or "", err or "", rc)
 
+        # communicate_utf8_async takes the stdin data as a *string*
         proc.communicate_utf8_async(
-            stdin.encode() if isinstance(stdin, str) else stdin, None, done)
+            stdin if isinstance(stdin, str) else None, None, done)
 
     def spawn(self, argv):
         """start a process and do not wait for it"""
@@ -1332,15 +1333,13 @@ class Panel(Gtk.Window):
         if getattr(self, "_modal_error_label", None) is not None:
             self._modal_error_label.set_text(text)
 
-    def _modal_busy(self, busy):
+    def _modal_busy(self, busy, message="Working…"):
         """disable the confirm button while a command is running"""
         if getattr(self, "_modal_ok_btn", None) is None:
             return
         self._modal_ok_btn.set_sensitive(not busy)
         if busy:
-            self._modal_error("Working…")
-        elif getattr(self, "_modal_error_label", None) is not None:
-            self._modal_error_label.set_text("")
+            self._modal_error(message)
 
     def _modal_close(self):
         if getattr(self, "_modal_scrim", None) is not None:
