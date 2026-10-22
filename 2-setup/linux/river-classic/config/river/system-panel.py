@@ -338,10 +338,14 @@ class Bt:
                        timeout, None, cb)
 
     def _watch(self):
-        self.conn.signal_subscribe(None, "org.bluez", None, None, None,
+        # the *service* is org.bluez; its signals carry the interfaces
+        # org.freedesktop.DBus.ObjectManager / .Properties, so the interface
+        # filter must stay empty -- filtering on "org.bluez" matches nothing
+        self.conn.signal_subscribe("org.bluez", None, None, None, None,
                                    Gio.DBusSignalFlags.NONE, self._on_signal)
 
-    def _on_signal(self, _conn, _sender, _path, _iface, _signal, params):
+    def _on_signal(self, _conn, _sender, _path, _iface, _signal, params,
+                   *_extra):
         try:
             unpacked = params.unpack()
         except Exception:
@@ -396,7 +400,8 @@ class Bt:
             return
         dev = self.devices.setdefault(addr, {"path": path, "address": addr})
         dev["path"] = path
-        dev["name"] = _unpack(props, "Name", None) or _unpack(props, "Alias", None) or addr
+        name = _unpack(props, "Name", None) or _unpack(props, "Alias", None)
+        dev["name"] = name or _pretty_mac(addr)
         dev["paired"] = bool(_unpack(props, "Paired", False))
         dev["connected"] = bool(_unpack(props, "Connected", False))
         dev["trusted"] = bool(_unpack(props, "Trusted", False))
@@ -529,6 +534,16 @@ class Bt:
         else:
             invocation.return_dbus_error("org.bluez.Error.Failed",
                                          "unsupported agent method %s" % method)
+
+
+def _pretty_mac(address):
+    """BlueZ calls unnamed devices F4-B6-2D-55-7E-6D -- show a real MAC"""
+    if not address:
+        return "unknown device"
+    text = str(address)
+    if "-" in text and ":" not in text:
+        return text.replace("-", ":")
+    return text
 
 
 def _unpack(props, key, default=None):
