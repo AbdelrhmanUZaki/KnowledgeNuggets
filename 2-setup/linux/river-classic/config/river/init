@@ -24,7 +24,8 @@ riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_w
 # ---- launcher / terminal -----------------------------------------------------
 riverctl map normal Super P spawn fuzzel
 riverctl map normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
-riverctl map normal Super+Shift Return spawn foot
+riverctl map normal Alt T spawn foot              # requested Alt+T terminal
+riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
 # ---- dwm core binds ----------------------------------------------------------
 riverctl map normal Super Q close                    # Mod+Shift+Q in dwm

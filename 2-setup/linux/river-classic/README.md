@@ -132,7 +132,8 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 | `Alt+1..9` | switch to tag · `Alt+0` = all tags |
 | `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
-| `Super+Shift+Return` | terminal (foot) |
+| `Alt+T` | terminal (foot) |
+| `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+P` | launcher (fuzzel) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+Return` | zoom / `Super+H` `Super+L` master ratio · `Super+Shift+H/L` master count |
