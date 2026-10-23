@@ -128,12 +128,17 @@ if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]
     fi
 fi
 
-# ---- clipboard history (cliphist): Super+V picker ------------------------------
-# wl-paste --watch records every *text* selection (images are skipped on purpose,
-# so screenshots do not fill the database); cliphist dedupes recent entries.
+# ---- clipboard history + persistence (cliphist): Super+V picker ----------------
+# Two recorders: plain text and images.  clipboard.sh re-copies each new item
+# through wl-copy so the selection survives the source app closing; a content
+# hash prevents the re-copy from triggering an endless watcher loop.
 if command -v cliphist >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
-    if ! pgrep -f "wl-paste --type text --watch cliphist" >/dev/null 2>&1; then
-        wl-paste --type text --watch cliphist store >>"$STATE_DIR/cliphist.log" 2>&1 &
+    rm -f "$STATE_DIR"/cliphist-last-*
+    if ! pgrep -f "wl-paste --type text --watch .*clipboard.sh store text" >/dev/null 2>&1; then
+        wl-paste --type text --watch "$HOME/.config/river/clipboard.sh" store text >>"$STATE_DIR/cliphist.log" 2>&1 &
+    fi
+    if ! pgrep -f "wl-paste --type image --watch .*clipboard.sh store image" >/dev/null 2>&1; then
+        wl-paste --type image --watch "$HOME/.config/river/clipboard.sh" store image >>"$STATE_DIR/cliphist.log" 2>&1 &
     fi
 fi
 

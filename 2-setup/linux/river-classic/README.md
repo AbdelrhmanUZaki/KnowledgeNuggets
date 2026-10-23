@@ -103,7 +103,7 @@ and `memory` modules do the rest.
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/unlock-session.sh` | releases a session that river left locked (black screen recovery) |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
-| `config/river/clipboard.sh` | clipboard history: text-only `cliphist` recorder + fuzzel picker (`Super+V`) |
+| `config/river/clipboard.sh` | clipboard history + persistence: `cliphist` text/image recorders, fuzzel picker (`Super+V`) |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
 | `config/waybar/style.css` | the solarized dark theme (GNOME-style flat surface) |
@@ -148,6 +148,20 @@ is installed. It reads the keyboard directly, so the keyboard half of the udev
 rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 `lctl`+`spc`+`esc`.
 
+### Clipboard
+
+`Super+V` opens fuzzel with the newest 200 entries. Two recorders — `wl-paste
+--type text` and `--type image` — feed `cliphist`; images are restored correctly
+because `wl-copy` auto-detects the image type (`cliphist decode | wl-copy` was
+verified byte-for-byte for PNG).
+
+Each new item is immediately re-copied through `wl-copy`, which takes ownership:
+the selection therefore **survives the app that copied it closing** (Wayland
+normally drops it). The trade-off is that only the recorded MIME survives — rich
+text/HTML becomes plain text, images keep their image type. History is capped at
+200 items and includes anything copied, **passwords included**;
+`~/.config/river/clipboard.sh clear` wipes the history and the current selection.
+
 ---
 
 ## Gotchas worth knowing (all hit during the build)
@@ -156,6 +170,11 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
   "/path/script arg"` works; `spawn "/path/script" arg` is accepted by `map` but
   fails on every keypress with `error(command): spawn: too many arguments` in
   river's log (the screenshot and clipboard binds both pass one quoted string).
+- **A clipboard keep-alive must ignore its own re-copy.** `cliphist` 0.5 does
+  **not** dedupe the copy made by `wl-copy`, so a naive `store → wl-copy` watcher
+  re-triggers itself forever. `clipboard.sh store` remembers a SHA-256 per MIME in
+  `$STATE_DIR/cliphist-last-*` and exits on identical data (two watcher events per
+  real copy, verified). The hash is per login; `clear` removes it.
 - **Audio is PipeWire, not PulseAudio.** `pactl` does not exist here; use `wpctl`
   (`wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5`, `wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle`).
 - **Brightness must go through logind.** `brightnessctl` direct writes are denied
