@@ -112,8 +112,9 @@ the keyboard directly, so the input udev rule must be installed
 
 - Lock from the System Menu, with `Super+Escape`, or from the keyboard-only
   fallback menu. All of them call the same `lock-session.sh`.
-- The lock screen is **swaylock** (or **gtklock** if installed). GDM is the
-  login manager, not an in-session locker: it can only start or end a session.
+- The lock screen is **gtklock** (GTK/PAM; the fallback is swaylock). GDM is
+  the login manager, not an in-session locker: it can only start or end a
+  session.
 - If a locker ever leaves the screen black or solid and you cannot unlock,
   switch to a text VT (`Ctrl+Alt+F3`), log in, and run:
 

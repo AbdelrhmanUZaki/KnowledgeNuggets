@@ -107,7 +107,7 @@ and `memory` modules do the rest.
 | `config/foot/foot.ini` | terminal font size (14 pt default; `ctrl+=` / `ctrl+-` zoom live) |
 | `config/dunst/dunstrc` | notifications — Noto Sans 14, white cards, gold 3px frame (ported from the dwm setup) |
 | `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
-| `config/river/lock-session.sh` | **the one lock entry point** — swaylock through foot (tty) with the wallpaper, or gtklock when installed |
+| `config/river/lock-session.sh` | **the one lock entry point** — gtklock (GTK/PAM, no tty) with the wallpaper, swaylock-through-foot fallback |
 | `config/river/show-shortcuts.sh` / `SHORTCUTS.md` | the complete cheat sheet; `Super+F1` or `Super+?` opens it |
 | `config/river/quick-settings.sh` | entry point for the panel (falls back to the dmenu) |
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
@@ -224,22 +224,24 @@ Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
 `power-menu.sh` and `Super+Escape` — calls the same wrapper,
 `config/river/lock-session.sh`. It:
 
-- starts **swaylock inside foot**, because swaylock reads the password from a
-  controlling terminal. A bare `swaylock -f` from a GUI has no tty: it can show
-  only a solid background and never accept the password. That is why the panel
-  was fixed earlier but the two menus still broke.
+- uses **gtklock** (now installed) for a GTK/PAM password form; it needs no tty
+  or terminal window. If gtklock is missing it falls back to **swaylock inside
+  foot**, because swaylock reads the password from a controlling terminal. A
+  bare `swaylock -f` from a GUI has no tty: it can show only a solid background
+  and never accept the password. That is why the panel was fixed earlier but the
+  two menus still broke.
 - passes the session **wallpaper** (with a dark fallback colour), so the lock
-  surface is not swaylock's default flat grey.
+  surface is not a flat grey default.
 - refuses to stack a second locker if one is already running; river also has the
   `patches/river-session-lock-release-on-client-death.patch` fix so a crashed
   locker releases the session instead of stranding it.
 
-If `gtklock` is installed, the wrapper uses it automatically. gtklock is a
-GTK/PAM lock screen with a real password form (no terminal/tty needed):
-
-```sh
-sudo apt install gtklock          # small; GTK3 + libgtk-session-lock + PAM
-```
+**gtklock is installed and is now the default locker** (4.0.0; GTK/PAM, real
+password form, no terminal/tty needed). The wrapper picks it automatically;
+`swaylock` through foot remains the fallback if gtklock is ever removed. The
+system package is included in `./install.sh deps`, and the first real
+lock/unlock cycle on Oct 23 (locked 17:10:36, wrong password rejected, correct
+password unlocked at 17:10:54) is in the journal.
 
 Force the old locker for a test with
 `RIVER_LOCKER=swaylock ~/.config/river/lock-session.sh`. Logs go to
@@ -422,8 +424,8 @@ sudo systemctl reset-failed kanata.service
   `patches/river-session-lock-release-on-client-death.patch`, which releases the session
   when the locker dies, but a locker that stays alive with no password input still looks
   stuck. Every entry point therefore goes through `lock-session.sh`, which starts
-  `swaylock` inside `foot` (the pty is required) with the wallpaper, or uses `gtklock`
-  when installed. If you ever land in the black state,
+  `gtklock` with the wallpaper, or falls back to `swaylock` inside `foot` (the pty is
+  required). If you ever land in the black state,
   `~/.config/river/unlock-session.sh` releases it: it asks the compositor for the lock,
   waits for the `locked` event (which river sends immediately to a new client when the
   session is already locked) and sends `unlock_and_destroy` — the only request that makes
