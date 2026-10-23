@@ -23,6 +23,7 @@ riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_w
 
 # ---- launcher / terminal -----------------------------------------------------
 riverctl map normal Super P spawn fuzzel
+riverctl map normal Super V spawn "$HOME/.config/river/clipboard.sh" pick   # clipboard history
 riverctl map normal Super+Shift Return spawn foot
 
 # ---- dwm core binds ----------------------------------------------------------
@@ -124,6 +125,15 @@ if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]
         # kanata has no --parent: stop it when river exits (children are reparented)
         ( while kill -0 "$RIVER_PID" 2>/dev/null; do sleep 2; done
           kill "$KANATA_PID" 2>/dev/null ) >/dev/null 2>&1 &
+    fi
+fi
+
+# ---- clipboard history (cliphist): Super+V picker ------------------------------
+# wl-paste --watch records every *text* selection (images are skipped on purpose,
+# so screenshots do not fill the database); cliphist dedupes recent entries.
+if command -v cliphist >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
+    if ! pgrep -f "wl-paste --type text --watch cliphist" >/dev/null 2>&1; then
+        wl-paste --type text --watch cliphist store >>"$STATE_DIR/cliphist.log" 2>&1 &
     fi
 fi
 

@@ -741,6 +741,7 @@ class Panel(Gtk.Window):
         for icon, tip, action in (
             ("\uf013", "Settings", ["gnome-control-center"]),
             ("\uf030", "Screenshot", ["%s/.config/river/screenshot.sh" % HOME]),
+            ("\uf0ea", "Clipboard history", ["%s/.config/river/clipboard.sh" % HOME, "pick"]),
         ):
             b = Gtk.Button()
             b.set_relief(Gtk.ReliefStyle.NONE)

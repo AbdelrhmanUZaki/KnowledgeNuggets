@@ -26,7 +26,7 @@ APT_PACKAGES=(
   # session + bar
   waybar foot fuzzel dunst swaylock
   # screen capture + clipboard
-  grim slurp wl-clipboard
+  grim slurp wl-clipboard cliphist
   # system panel / desktop integration
   pavucontrol network-manager-gnome blueman
   gnome-calendar gnome-control-center

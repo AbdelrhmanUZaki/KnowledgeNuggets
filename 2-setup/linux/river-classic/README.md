@@ -103,6 +103,7 @@ and `memory` modules do the rest.
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/unlock-session.sh` | releases a session that river left locked (black screen recovery) |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
+| `config/river/clipboard.sh` | clipboard history: text-only `cliphist` recorder + fuzzel picker (`Super+V`) |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
 | `config/waybar/style.css` | the solarized dark theme (GNOME-style flat surface) |
@@ -126,6 +127,7 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Super+Shift+Return` | terminal (foot) |
 | `Super+P` | launcher (fuzzel) |
+| `Super+V` | clipboard history (cliphist + fuzzel) |
 | `Super+Return` | zoom / `Super+H` `Super+L` master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
