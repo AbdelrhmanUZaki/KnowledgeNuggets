@@ -13,9 +13,9 @@
 #     the opposite of what we need.
 #   * The default swaylock background is a solid colour.  We pass the same
 #     wallpaper as the session so the lock screen looks intentional.
-#   * gtklock (if installed) is the nicer option: a GTK/PAM unlock form, no tty
-#     required.  This wrapper picks it automatically.  Force the old locker with
-#     RIVER_LOCKER=swaylock.
+#   * The default locker is the simple swaylock-in-foot path described above.
+#     gtklock (GTK/PAM form + its powerbar module) stays in the repo as an
+#     opt-in experiment: run with RIVER_LOCKER=gtklock to use it.
 #
 # River has a matching patch (patches/river-session-lock-release-on-client-death.patch)
 # that releases the session if the locker dies, so a crash cannot leave the
@@ -48,10 +48,10 @@ if pgrep -x gtklock >/dev/null 2>&1 || pgrep -x swaylock >/dev/null 2>&1; then
     exit 0
 fi
 
-LOCKER="${RIVER_LOCKER:-auto}"
-if [ "$LOCKER" = auto ] && command -v gtklock >/dev/null 2>&1; then
-    LOCKER=gtklock
-fi
+# Keep the old, simple setup as the default: swaylock inside foot.  gtklock is
+# still fully supported (config + powerbar + Switch User wiring are untouched)
+# but now opt-in, so switching back is just RIVER_LOCKER=gtklock.
+LOCKER="${RIVER_LOCKER:-swaylock}"
 
 if [ "$LOCKER" = gtklock ]; then
     if command -v gtklock >/dev/null 2>&1; then

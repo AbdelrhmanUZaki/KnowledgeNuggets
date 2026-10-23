@@ -112,17 +112,16 @@ the keyboard directly, so the input udev rule must be installed
 
 - Lock from the System Menu, with `Super+Escape`, or from the keyboard-only
   fallback menu. All of them call the same `lock-session.sh`.
-- The lock screen is **gtklock** (GTK/PAM; the fallback is swaylock). GDM is
-  the login manager, not an in-session locker: it can only start or end a
-  session.
-- **Switch user** is the non-destructive logout-free path (nothing in-app is
-  closed): the lock screen's power bar button calls
-  `config/river/switch-user.sh`, which releases the keyboard (kanata) and
+- The lock screen is **swaylock inside foot** (simple, wallpaper background).
+  gtklock + its power bar remain available opt-in with
+  `RIVER_LOCKER=gtklock ~/.config/river/lock-session.sh`. GDM is the login
+  manager, not an in-session locker: it can only start or end a session.
+- **Switch user** (non-destructive, nothing in-app is closed) is in the
+  System Menu / keyboard-only menu / power menu, and calls
+  `config/river/switch-user.sh`: it releases the keyboard (kanata) and
   touchpad (gestures.py) grabs, then asks GDM for a fresh greeter. Returning
-  to the session — via the lock screen's unlock *or* GDM's own re-auth —
-  brings both grabbers back automatically (`input-session.sh` watches
-  logind's Active state). The keyboard remap is off while it is away, so the
-  password form takes the plain `us` keyboard.
+  to the session — by unlock or GDM's own re-auth — brings both grabbers back
+  automatically (`input-session.sh` watches logind's Active state).
 - `input-session.sh status` shows whether the grabbers are running or paused.
 - If a locker ever leaves the screen black or solid and you cannot unlock,
   switch to a text VT (`Ctrl+Alt+F3`), log in, and run:

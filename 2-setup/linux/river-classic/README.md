@@ -221,61 +221,45 @@ open apps. The lock screen itself is a separate protocol
 (`ext-session-lock-v1`) implemented by the locker.
 
 Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
-`power-menu.sh` and `Super+Escape` — calls the same wrapper,
+`power-menu.sh`, `Super+L` and `Super+Escape` — calls the same wrapper,
 `config/river/lock-session.sh`. It:
 
-- uses **gtklock** (now installed) for a GTK/PAM password form; it needs no tty
-  or terminal window. If gtklock is missing it falls back to **swaylock inside
-  foot**, because swaylock reads the password from a controlling terminal. A
-  bare `swaylock -f` from a GUI has no tty: it can show only a solid background
-  and never accept the password. That is why the panel was fixed earlier but the
-  two menus still broke.
-- passes the session **wallpaper** (with a dark fallback colour), so the lock
-  surface is not a flat grey default.
+- uses the **simple swaylock path**: swaylock reads the password from its
+  controlling terminal, so it runs inside **foot** (`foot -e swaylock`), whose
+  window sits behind the lock surface. A bare `swaylock -f` from a GUI has no
+  tty: it can show only a solid background and never accept the password. That
+  is why the old separate invocations broke.
+- passes the session **wallpaper** (`-i … -s fill`, dark `-c` fallback), so the
+  lock surface is not a flat grey default.
 - refuses to stack a second locker if one is already running; river also has the
   `patches/river-session-lock-release-on-client-death.patch` fix so a crashed
   locker releases the session instead of stranding it.
 
-**gtklock is installed and is now the default locker** (4.0.0; GTK/PAM, real
-password form, no terminal/tty needed). The wrapper picks it automatically;
-`swaylock` through foot remains the fallback if gtklock is ever removed. The
-system package is included in `./install.sh deps`, and the first real
-lock/unlock cycle on Oct 23 (wrong password rejected, correct password
-unlocked) is in the journal.
+**gtklock is an opt-in experiment, not the default.** Its package, config
+(`config/gtklock/config.ini`), powerbar module and Switch User wiring all stay
+in the repo — select it explicitly with
+`RIVER_LOCKER=gtklock ~/.config/river/lock-session.sh`, or export
+`RIVER_LOCKER=gtklock` in the session if you ever want it back as the default.
+While gtklock is active its lock screen has a power bar with *Power off*,
+*Reboot*, *Suspend* and *Switch user* (`logout-command` is intentionally
+empty: ending the session belongs to `Super+Shift+E` / Log Out, which runs the
+cross-session cleanup).
 
-**The lock screen also has a power bar** (`gtklock-powerbar-module`): four
-buttons at the bottom of the form — *Power off*, *Reboot*, *Suspend* and
-*Switch user*. `logout-command` is deliberately left empty: ending the river
-session (and running the cross-session cleanup) belongs to the
-`Super+Shift+E` / Log Out path, not to a button that users hit while squinting
-at a lock surface.
+**Switch user** (the non-destructive logout-free path) is available from the
+System Menu / keyboard-only menu / power menu even with the swaylock lock
+screen. Those entries call `config/river/switch-user.sh`, which first asks
+`input-session.sh pause` to release the keyboard (kanata) and touchpad
+(gestures.py) grabs, *then* asks GDM for a fresh greeter
+(`org.gnome.DisplayManager.LocalDisplayFactory.CreateTransientDisplay`). A
+`session watcher` inside `input-session.sh` also pauses whenever logind says
+the session is inactive, and resumes when it is active again — so the handoff
+works whichever route the seat comes back by (including GDM's re-auth, which
+never runs a locker's unlock command). If the GDM call fails the grabs are
+restored immediately.
 
-**Switch user** is the non-destructive logout-free path:
-
-- The button calls `config/river/switch-user.sh`, which first asks
-  `input-session.sh pause` to release the keyboard (kanata) and touchpad
-  (gestures.py) grabs, *then* asks GDM for a fresh greeter
-  (`org.gnome.DisplayManager.LocalDisplayFactory.CreateTransientDisplay`).
-- Input is released either way the session leaves the seat: the lock screen's
-  button pauses explicitly, and a `session watcher` inside
-  `input-session.sh` pauses whenever logind reports the session inactive
-  (so a VT switch or greeter that arrives by *another* route gets the input
-  too). When the session becomes active again, that watcher resumes the
-  grabs — regardless of *which* way it came back, including GDM's re-auth
-  path into this same session, which never runs gtklock's `unlock-command`.
-- If the GDM call fails, the session's input grabs are restored
-  immediately, so a failed switch never leaves the seat unusable.
-
-Two other details worth noting: the kanata keymap is off while the grabs are
-released, so the password form takes the plain `us` keyboard (typing a
-password is unaffected; muscle-memory zones like `Caps`→Esc come back on
-resume). And both grabbers' respawn supervisors only accept either the
-`input-paused` flag or a *permanent failure* marker — a lock screen that
-stays paused for hours will not spin its daemons back up while the user is
-somewhere else.
-
-Force the old locker for a test with
-`RIVER_LOCKER=swaylock ~/.config/river/lock-session.sh`. Logs go to
+Force the simple locker for a one-off test with
+`RIVER_LOCKER=swaylock ~/.config/river/lock-session.sh` (that is the default),
+or gtklock with `RIVER_LOCKER=gtklock …`. Logs go to
 `~/.local/state/river-classic/lock.log`. `input-session.sh status` shows
 whether the grabbers are running or paused.
 
