@@ -35,6 +35,7 @@ link "$HERE/config/river" "$HOME/.config/river"
 link "$HERE/config/waybar" "$HOME/.config/waybar"
 link "$HERE/config/foot" "$HOME/.config/foot"
 link "$HERE/config/dunst" "$HOME/.config/dunst"
+link "$HERE/config/gtklock" "$HOME/.config/gtklock"
 
 # shared kanata config (the same file the other Linux machines use)
 if command -v kanata >/dev/null 2>&1 && [ -f "$HERE/../kanata.kbd" ]; then

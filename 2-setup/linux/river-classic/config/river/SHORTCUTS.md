@@ -108,6 +108,28 @@ The config is `~/.config/kanata/kanata.kbd`, linked from the repo. Kanata reads
 the keyboard directly, so the input udev rule must be installed
 (`sudo ./install.sh rules`).
 
+## Neru navigation
+
+Neru runs as a systemd user service and draws its own overlay. On Wayland its
+`[hotkeys]` are off by default, so the modes are bound in River:
+
+| Keys | Action |
+|---|---|
+| `Super+Shift+N` | hints (clickable elements) |
+| `Super+Shift+G` | grid |
+| `Super+Shift+C` | recursive grid |
+| `Super+Shift+B` | bisect |
+| `Super+Shift+S` | scroll |
+| `Escape` | exit the active mode |
+
+Config: `~/.config/neru/config.toml`. Service logs:
+`journalctl --user -u neru.service`; diagnostics: `neru doctor`.
+
+Neru's on-screen mode and sticky-modifier badges are disabled on River: v1.59.0
+redraws them every 16 ms, which can fill the Wayland connection during a long
+mode and leave the keyboard grabbed. Modifier handling and all modes still
+work; use `neru status` to see the active mode.
+
 ## Locking and recovery
 
 - Lock from the System Menu, with `Super+Escape`, or from the keyboard-only
@@ -115,6 +137,14 @@ the keyboard directly, so the input udev rule must be installed
 - The lock screen is **gtklock** (GTK/PAM; the fallback is swaylock). GDM is
   the login manager, not an in-session locker: it can only start or end a
   session.
+- **Switch user** is the non-destructive logout-free path (nothing in-app is
+  closed): the lock screen's power bar button calls
+  `config/river/switch-user.sh`, which releases the keyboard (kanata) and
+  touchpad (gestures.py) grabs, then asks GDM for a fresh greeter. When you
+  return and unlock, `input-session.sh` brings both grabbers back. The
+  keyboard remap is off while it is away, so the password form takes the
+  plain `us` keyboard.
+- `input-session.sh status` shows whether the grabbers are running or paused.
 - If a locker ever leaves the screen black or solid and you cannot unlock,
   switch to a text VT (`Ctrl+Alt+F3`), log in, and run:
 
@@ -125,5 +155,6 @@ the keyboard directly, so the input udev rule must be installed
   This sends `unlock_and_destroy` through a new lock client; it only works while
   river believes the session is locked. Then switch back to the graphical VT.
 - Logging out with `Super+Shift+E` runs the session cleanup and returns to GDM.
-  Do **not** use GDM's *Switch User*: a river session left active on another VT
-  can keep global keyboard/touchpad grabs.
+  Switch User (lock screen power bar) keeps this session alive on its own VT
+  instead: it pauses the input grabs before asking GDM for a greeter, so the
+  greeter isn't blocked by them.

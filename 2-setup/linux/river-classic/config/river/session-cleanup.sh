@@ -74,6 +74,9 @@ log "compositor exited; cleaning river-classic processes"
 # Kill the launcher loops first so they cannot restart their children.
 pkill -f "$HOME/.config/river/init" 2>/dev/null || true
 pkill -f "$HOME/.config/river/gestures.py" 2>/dev/null || true
+# The managed input supervisor (input-session.sh) instead of the old inline
+# loop; both argvs have river/init or river/input-session.sh respectively.
+pkill -f "$HOME/.config/river/input-session.sh" 2>/dev/null || true
 
 # Input grabs and session daemons.  These are river-specific; GNOME does not
 # use any of them.
@@ -107,6 +110,12 @@ if [ -n "$new_river" ] && [ "$new_river" != "$RIVER_PID" ]; then
 fi
 pkill -9 -f "$HOME/.config/river/init" 2>/dev/null || true
 pkill -9 -f "$HOME/.config/river/gestures.py" 2>/dev/null || true
+pkill -9 -f "$HOME/.config/river/input-session.sh" 2>/dev/null || true
+# Drop the pidfiles, pause flag and gave-up markers: the next river session of
+# this user gets a clean managed-supervisor state instead of inheriting ours.
+rm -f "$STATE_DIR/input-paused" "$STATE_DIR/input-kanata-gave-up" \
+      "$STATE_DIR/input-gestures-gave-up" "$STATE_DIR/input-kanata.pid" \
+      "$STATE_DIR/input-supervisor.pid" "$STATE_DIR/input-session.lock"
 for name in kanata waybar swaybg dunst rivertile swaylock gtklock; do
     pkill -9 -x "$name" 2>/dev/null || true
 done

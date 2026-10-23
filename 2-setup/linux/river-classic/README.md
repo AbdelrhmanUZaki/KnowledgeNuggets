@@ -142,7 +142,7 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | Keys | Action |
 |---|---|
 | `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
-| `Super+Escape` | lock the session |
+| `Super+Escape` | lock the session (power bar also has Switch user / power / reboot) |
 | `Alt+1..9` | switch to tag · `Alt+0` = all tags |
 | `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
@@ -240,12 +240,41 @@ Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
 password form, no terminal/tty needed). The wrapper picks it automatically;
 `swaylock` through foot remains the fallback if gtklock is ever removed. The
 system package is included in `./install.sh deps`, and the first real
-lock/unlock cycle on Oct 23 (locked 17:10:36, wrong password rejected, correct
-password unlocked at 17:10:54) is in the journal.
+lock/unlock cycle on Oct 23 (wrong password rejected, correct password
+unlocked) is in the journal.
+
+**The lock screen also has a power bar** (`gtklock-powerbar-module`): four
+buttons at the bottom of the form — *Power off*, *Reboot*, *Suspend* and
+*Switch user*. `logout-command` is deliberately left empty: ending the river
+session (and running the cross-session cleanup) belongs to the
+`Super+Shift+E` / Log Out path, not to a button that users hit while squinting
+at a lock surface.
+
+**Switch user** is the non-destructive logout-free path:
+
+- The button calls `config/river/switch-user.sh`, which first asks
+  `input-session.sh pause` to release the keyboard (kanata) and touchpad
+  (gestures.py) grabs, *then* asks GDM for a fresh greeter
+  (`org.gnome.DisplayManager.LocalDisplayFactory.CreateTransientDisplay`).
+- When the user returns to this session, river shows the same gtklock form;
+  *unlocking* triggers `[main] unlock-command` → `input-session.sh resume`,
+  which re-spawns only what is actually missing (and is a no-op after an
+  ordinary lock→unlock cycle that never touched the grabs).
+- If the GDM call fails, the session's own input grabs are restored
+  immediately, so a failed switch never leaves the seat unusable.
+
+Two other details worth noting: the kanata keymap is off while the grabs are
+released, so the password form takes the plain `us` keyboard (typing a
+password is unaffected; muscle-memory zones like `Caps`→Esc come back on
+resume). And both grabbers' respawn supervisors only accept either the
+`input-paused` flag or a *permanent failure* marker — a lock screen that
+stays paused for hours will not spin its daemons back up while the user is
+somewhere else.
 
 Force the old locker for a test with
 `RIVER_LOCKER=swaylock ~/.config/river/lock-session.sh`. Logs go to
-`~/.local/state/river-classic/lock.log`.
+`~/.local/state/river-classic/lock.log`. `input-session.sh status` shows
+whether the grabbers are running or paused.
 
 Recovery, if the screen is ever black/solid and cannot be unlocked: switch to a
 text VT (`Ctrl+Alt+F3`), log in, and run
@@ -286,10 +315,12 @@ profile, Wi-Fi/Bluetooth radio state, saved network/Bluetooth profiles and
 CopyQ history.  These are not failures, but GNOME may start in the state you
 last selected in river; change them in GNOME if you want the previous state.
 
-Use GDM's **Log Out** (or `Super+Shift+E` in river), not **Switch User**, when
-going back to GNOME.  The cleanup runs when river exits; an evdev grab is
-global, so a river session left logged in on another VT can still affect the
-new session.
+For *leaving* river (and running the cross-session cleanup) use
+`Super+Shift+E` or GDM's Log Out. For staying logged in while someone else
+uses the machine, use the lock screen's **Switch user** button described
+above: it releases river's input grabs before GDM takes the seat, so the
+other user gets a working keyboard and touchpad. The GNOME fallback session
+does not run either grabber, so it never participates in this handoff.
 
 ### Verify the handoff
 

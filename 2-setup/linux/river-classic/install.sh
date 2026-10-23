@@ -27,8 +27,9 @@ APT_PACKAGES=(
   # session + bar
   waybar foot fuzzel dunst swaylock swaybg
   # lock screen: gtklock is the preferred GTK/PAM locker (no tty needed);
-  # lock-session.sh falls back to swaylock if it is ever missing
-  gtklock
+  # lock-session.sh falls back to swaylock if it is ever missing.
+  # -powerbar-module adds the lock-screen buttons; Switch User relies on it.
+  gtklock gtklock-powerbar-module
   # user feedback + Alt+B bar toggle (killall -USR1 waybar)
   libnotify-bin psmisc
   # screen capture (wl-copy for screenshots); CopyQ is the 17.x AppImage,

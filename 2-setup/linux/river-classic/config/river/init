@@ -137,6 +137,16 @@ riverctl map normal None XF86AudioPrev    spawn "$HOME/.config/river/media-key.s
 riverctl map normal None Print            spawn "$HOME/.config/river/screenshot.sh full"   # Print = full screen
 riverctl map normal Super+Shift Print     spawn "$HOME/.config/river/screenshot.sh"        # Shift+Print = region
 
+# ---- Neru: keyboard-driven navigation ------------------------------------------
+# Neru is started as a systemd user service (neru services install). On Wayland
+# its own [hotkeys] are off by default, so trigger the modes from River. Use the
+# absolute path: GDM does not put ~/.local/bin on River's PATH.
+riverctl map normal Super+Shift N spawn "$HOME/.local/bin/neru hints"
+riverctl map normal Super+Shift G spawn "$HOME/.local/bin/neru grid"
+riverctl map normal Super+Shift C spawn "$HOME/.local/bin/neru recursive_grid"
+riverctl map normal Super+Shift B spawn "$HOME/.local/bin/neru bisect"
+riverctl map normal Super+Shift S spawn "$HOME/.local/bin/neru scroll"
+
 # ---- autostart -----------------------------------------------------------------
 # persistent state dir — /tmp is wiped on every boot, which silently killed the bar
 # (its log redirect failed -> waybar never started)
@@ -173,21 +183,23 @@ if [ -n "$RIVER_PID" ] && [ -x "$CLEANUP" ]; then
     ( "$CLEANUP" "$RIVER_PID" >>"$STATE_DIR/cleanup.log" 2>&1 & )
 fi
 
-# ---- keyboard remapper (kanata): space-hold = arrows, caps-hold = scroll -------
-# Config: 2-setup/linux/kanata.kbd, linked to ~/.config/kanata/kanata.kbd by
-# restore.sh. kanata reads the keyboard directly, so the udev keyboard rule must
-# be installed (udev/70-river-classic-input.rules). Without it kanata exits and
-# kanata.log says why — the rest of the session keeps working.
-if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]; then
-    if ! pgrep -x kanata >/dev/null 2>&1; then
-        kanata --cfg "$HOME/.config/kanata/kanata.kbd" >>"$STATE_DIR/kanata.log" 2>&1 &
-        KANATA_PID=$!
-        # kanata has no --parent: stop it (and any wrapper child) when river
-        # exits. `river_alive` treats a zombie river as gone.
-        ( while river_alive; do sleep 2; done
-          pkill -P "$KANATA_PID" 2>/dev/null || true
-          kill "$KANATA_PID" 2>/dev/null ) >/dev/null 2>&1 &
+# ---- keyboard remapper + touchpad gestures (input-session.sh) -------------------
+# kanata (space-hold arrows / caps-hold scroll, configs at 2-setup/linux/kanata.kbd)
+# and gestures.py (3-tap back, 4-tap forward, 3/4-finger swipes) both hold a
+# global evdev grab. They live in one managed supervisor now because the lock
+# screen has to *release* both grabs before GDM takes the seat (Switch User),
+# then bring them back when this session is unlocked again — without
+# killing the respawn bookkeeping together with the child. input-session.sh
+# owns both processes with pidfiles and a pause flag, and `switch-user.sh`
+# calls its `pause` verb from the gtklock powerbar button.
+INPUT_SESSION="$HOME/.config/river/input-session.sh"
+if [ -x "$INPUT_SESSION" ]; then
+    if ! "$INPUT_SESSION" start "$RIVER_PID" >>"$STATE_DIR/input-session.log" 2>&1; then
+        printf '%s input-session start failed\n' "$(date '+%F %T')" >>"$STATE_DIR/input-session.log"
     fi
+else
+    printf '%s input-session.sh missing; keyboard/gestures stays off\n' \
+        "$(date '+%F %T')" >>"$STATE_DIR/input-session.log"
 fi
 
 # ---- clipboard manager (CopyQ 17): Super+V -------------------------------------
@@ -253,26 +265,17 @@ riverctl input '*Touchpad' pointer-accel 0.2
 riverctl input '*Touchpad' scroll-factor 0.3
 
 # ---- multi-finger touchpad gestures --------------------------------------------
-# 3-finger tap = back, 4-finger tap = forward, 3-finger swipe up/down = volume.
-# The daemon mirrors the pad through a non-clickpad uinput clone, which lets it
-# map 1-finger press = left and 2/3-finger press = right (libinput's clickfinger
-# has 3 fingers hard-coded to middle and river cannot remap it). The physical
-# pad is EVIOCGRABbed only after river adopts the clone; on any exit the grab is
-# released by the kernel, so stock clickfinger behaviour always comes back.
-# Needs udev/70-river-classic-input.rules (see README) or it exits with code 3.
-GESTURES_LOG="$STATE_DIR/gestures.log"
-( while river_alive; do
-      "$HOME/.config/river/gestures.py" --parent "$RIVER_PID"
-      rc=$?
-      river_alive || break
-      if [ "$rc" -eq 3 ]; then
-          exit 0                       # missing permission/uinput -> no point looping
-      elif [ "$rc" -eq 4 ]; then
-          sleep 5                      # no touchpad (yet) -> wait for it
-      else
-          sleep 2
-      fi
-  done ) >>"$GESTURES_LOG" 2>&1 &
+# Owned by input-session.sh above (kanata block). Its managed supervisor band
+# and pause state mean the lock screen can stop and restart the daemon for
+# user switching without leaving a stuck respawn loop behind. ↓ for the
+# actual mapping, see config/river/SHORTCUTS.md / docs in the README.
+
+# ---- Neru service ---------------------------------------------------------------
+# River does not start graphical-session.target, so neru.service (WantedBy it)
+# would otherwise never autostart. The user manager keeps its own environment,
+# separate from this shell, so import the display variables first.
+systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null || true
+systemctl --user start neru.service 2>/dev/null || true
 
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300
