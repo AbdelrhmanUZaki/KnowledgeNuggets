@@ -868,11 +868,11 @@ class Panel(Gtk.Window):
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         row.set_homogeneous(True)
         actions = (
-            # swaylock needs a tty to read the password from: started without
-            # one it authenticates with an empty password and quits at once.
-            # foot provides the tty (its window ends up behind the lock
-            # surface, the prompt is drawn by swaylock itself).
-            ("\uf023", "Lock", ["foot", "-e", "swaylock"]),
+            # One lock entry point for the panel, both menus and the keybind:
+            # swaylock needs a tty to read the password from.  The wrapper runs
+            # it through foot (or uses gtklock when installed), so locking from
+            # the panel can never land on a solid screen with no password input.
+            ("\uf023", "Lock", [HOME + "/.config/river/lock-session.sh"]),
             ("\uf08b", "Log out", ["%s/.local/bin/riverctl" % HOME, "exit"]),
             ("\uf021", "Reboot", ["systemctl", "reboot"]),
             ("\uf186", "Suspend", ["systemctl", "suspend"]),

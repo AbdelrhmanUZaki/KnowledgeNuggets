@@ -53,6 +53,14 @@ riverctl map normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/
 riverctl map normal Alt T spawn foot              # requested Alt+T terminal
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
+# ---- help / lock --------------------------------------------------------------
+# Every lock entry point calls the same wrapper: swaylock needs a tty, and the
+# old bare `swaylock -f` paths left a solid screen with no password input.
+riverctl map normal Super Escape spawn "$HOME/.config/river/lock-session.sh"
+# Full keybinding cheat sheet: Super+F1 or Super+? (Super+Shift+Slash).
+riverctl map normal Super F1 spawn "$HOME/.config/river/show-shortcuts.sh"
+riverctl map normal Super+Shift Slash spawn "$HOME/.config/river/show-shortcuts.sh"
+
 # ---- dwm core binds ----------------------------------------------------------
 riverctl map normal Super Q close                    # Mod+Shift+Q in dwm
 riverctl map normal Super+Shift E exit

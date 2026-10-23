@@ -82,6 +82,9 @@ pkill -x waybar 2>/dev/null || true
 pkill -x swaybg 2>/dev/null || true
 pkill -x dunst 2>/dev/null || true
 pkill -x rivertile 2>/dev/null || true
+# A locker is an ext-session-lock client; it must not survive into GDM/GNOME.
+pkill -x swaylock 2>/dev/null || true
+pkill -x gtklock 2>/dev/null || true
 
 # CopyQ's server can be detached from init.  Ask it to exit first (so it can
 # flush history), then make sure the server is gone.
@@ -104,7 +107,7 @@ if [ -n "$new_river" ] && [ "$new_river" != "$RIVER_PID" ]; then
 fi
 pkill -9 -f "$HOME/.config/river/init" 2>/dev/null || true
 pkill -9 -f "$HOME/.config/river/gestures.py" 2>/dev/null || true
-for name in kanata waybar swaybg dunst rivertile; do
+for name in kanata waybar swaybg dunst rivertile swaylock gtklock; do
     pkill -9 -x "$name" 2>/dev/null || true
 done
 pkill -9 -x copyq 2>/dev/null || true

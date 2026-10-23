@@ -8,7 +8,7 @@ choice=$(printf 'Settings\nLogout\nLock\nReboot\nPoweroff\nSuspend\n' \
 case "$choice" in
     Settings) gnome-control-center ;;
     Logout)   riverctl exit ;;
-    Lock)     swaylock -f ;;
+    Lock)     "$HOME/.config/river/lock-session.sh" ;;
     Reboot)   systemctl reboot ;;
     Poweroff) systemctl poweroff ;;
     Suspend)  systemctl suspend ;;

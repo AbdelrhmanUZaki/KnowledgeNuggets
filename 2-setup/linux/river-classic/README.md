@@ -107,6 +107,8 @@ and `memory` modules do the rest.
 | `config/foot/foot.ini` | terminal font size (14 pt default; `ctrl+=` / `ctrl+-` zoom live) |
 | `config/dunst/dunstrc` | notifications — Noto Sans 14, white cards, gold 3px frame (ported from the dwm setup) |
 | `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
+| `config/river/lock-session.sh` | **the one lock entry point** — swaylock through foot (tty) with the wallpaper, or gtklock when installed |
+| `config/river/show-shortcuts.sh` / `SHORTCUTS.md` | the complete cheat sheet; `Super+F1` or `Super+?` opens it |
 | `config/river/quick-settings.sh` | entry point for the panel (falls back to the dmenu) |
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |
 | `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt (the secret goes in over stdin, never on the command line) |
@@ -133,9 +135,14 @@ and `memory` modules do the rest.
 ## Keybindings
 
 Tags are on **Alt** (dwm muscle memory), not Super.
+The complete list — including resize, output, touchpad and kanata bindings — is
+[`config/river/SHORTCUTS.md`](config/river/SHORTCUTS.md); press `Super+F1` (or
+`Super+?`) to open it in a terminal at any time.
 
 | Keys | Action |
 |---|---|
+| `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
+| `Super+Escape` | lock the session |
 | `Alt+1..9` | switch to tag · `Alt+0` = all tags |
 | `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
@@ -160,8 +167,8 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 ### Keyboard remap (kanata)
 
 `space` held = arrows (`h/j/k/l`), `space` tapped = a normal space. `caps` tapped =
-Esc; `caps` held = vim scroll (`j/k` scroll, `d/e` page, `c/s` fast, `g` top,
-double-tap `g` bottom). The config is `../kanata.kbd` (shared with the other Linux
+Esc; `caps` held = vim scroll (`h/j/k/l` scroll, `d/e` normal step, `c/s` fast,
+`g` top, double-tap `g` bottom). The config is `../kanata.kbd` (shared with the other Linux
 machines), linked to `~/.config/kanata/kanata.kbd`; `init` starts kanata when it
 is installed. It reads the keyboard directly, so the keyboard half of the udev
 rule is required (`sudo ./install.sh rules`). Emergency exit: hold
@@ -204,6 +211,44 @@ original bytes.
 Everything copied is in the history, **passwords included**. Delete sensitive
 items in the CopyQ window (select + Delete); clearing all:
 `copyq eval 'for (var i=count()-1;i>=0;--i) remove(i)'`.
+
+## Locking the session
+
+**GDM is already the login manager** (`/etc/X11/default-display-manager` is
+`/usr/sbin/gdm3`). It is not an in-session locker: it can only start or end a
+session, so using it as a "lock screen" would mean logging out and closing all
+open apps. The lock screen itself is a separate protocol
+(`ext-session-lock-v1`) implemented by the locker.
+
+Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
+`power-menu.sh` and `Super+Escape` — calls the same wrapper,
+`config/river/lock-session.sh`. It:
+
+- starts **swaylock inside foot**, because swaylock reads the password from a
+  controlling terminal. A bare `swaylock -f` from a GUI has no tty: it can show
+  only a solid background and never accept the password. That is why the panel
+  was fixed earlier but the two menus still broke.
+- passes the session **wallpaper** (with a dark fallback colour), so the lock
+  surface is not swaylock's default flat grey.
+- refuses to stack a second locker if one is already running; river also has the
+  `patches/river-session-lock-release-on-client-death.patch` fix so a crashed
+  locker releases the session instead of stranding it.
+
+If `gtklock` is installed, the wrapper uses it automatically. gtklock is a
+GTK/PAM lock screen with a real password form (no terminal/tty needed):
+
+```sh
+sudo apt install gtklock          # small; GTK3 + libgtk-session-lock + PAM
+```
+
+Force the old locker for a test with
+`RIVER_LOCKER=swaylock ~/.config/river/lock-session.sh`. Logs go to
+`~/.local/state/river-classic/lock.log`.
+
+Recovery, if the screen is ever black/solid and cannot be unlocked: switch to a
+text VT (`Ctrl+Alt+F3`), log in, and run
+`~/.config/river/unlock-session.sh`. It sends `unlock_and_destroy` through a new
+lock client; it only works while river believes the session is locked.
 
 ## Switching back to GNOME safely
 
@@ -373,14 +418,17 @@ sudo systemctl reset-failed kanata.service
 - **river's session lock can strand the session**: `LockManager.handleDestroy()` does not
   unlock when the lock client dies, so killing a locker (or a locker that has no tty to
   read the password from) leaves **a black screen with only the cursor**, and a VT switch
-  does not help — the state lives in the compositor. The session button therefore starts
-  `foot -e swaylock` (foot provides the tty) instead of a bare `swaylock`. If you ever
-  land in the black state, `~/.config/river/unlock-session.sh` releases it: it asks the
-  compositor for the lock, waits for the `locked` event (which river sends immediately to
-  a new client when the session is already locked) and sends `unlock_and_destroy` — the
-  only request that makes river leave the locked state. It needs `gcc`,
-  `wayland-scanner`, `libwayland-dev` and `wayland-protocols`, and it only works **while
-  the session is locked**.
+  does not help — the state lives in the compositor. The installed river carries
+  `patches/river-session-lock-release-on-client-death.patch`, which releases the session
+  when the locker dies, but a locker that stays alive with no password input still looks
+  stuck. Every entry point therefore goes through `lock-session.sh`, which starts
+  `swaylock` inside `foot` (the pty is required) with the wallpaper, or uses `gtklock`
+  when installed. If you ever land in the black state,
+  `~/.config/river/unlock-session.sh` releases it: it asks the compositor for the lock,
+  waits for the `locked` event (which river sends immediately to a new client when the
+  session is already locked) and sends `unlock_and_destroy` — the only request that makes
+  river leave the locked state. It needs `gcc`, `wayland-scanner`, `libwayland-dev` and
+  `wayland-protocols`, and it only works **while the session is locked**.
 
 Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
 

@@ -81,7 +81,7 @@ case "$pick" in
         exit 0
         ;;
     🔒*)
-        swaylock -f
+        "$HOME/.config/river/lock-session.sh"
         exit 0
         ;;
     ⇥*)
