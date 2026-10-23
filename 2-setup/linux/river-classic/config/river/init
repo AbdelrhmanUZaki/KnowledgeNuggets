@@ -66,40 +66,51 @@ fi
 # plain "us" keymap — GNOME's input sources do NOT apply to this session.
 riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_win us,ara
 
+# Binds whose keysyms differ between the two keyboard groups (letters and a few
+# symbols like Slash , .) are pinned to the us layout: river otherwise
+# translates a pressed key through the *active* group, so those binds stop
+# working the moment Arabic is selected.  `-layout 0` makes the bind match the
+# key's layout-0 keysym no matter which group is active (riverctl's man page:
+# "this layout is used to translate the key independent of the active layout").
+# Function/arrow/XF86 keys are stable in both groups, so they stay unpinned.
+map_us() {
+    riverctl map -layout 0 "$@"
+}
+
 # ---- launcher / terminal -----------------------------------------------------
-riverctl map normal Super P spawn fuzzel
-riverctl map normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
-riverctl map normal Alt T spawn foot              # requested Alt+T terminal
+map_us normal Super P spawn fuzzel
+map_us normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
+map_us normal Alt T spawn foot              # requested Alt+T terminal
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
 # ---- help / lock --------------------------------------------------------------
 # Every lock entry point calls the same wrapper: swaylock needs a tty, and the
 # old bare `swaylock -f` paths left a solid screen with no password input.
 # Super+L = GNOME muscle memory (Super+Escape is kept as the dwm-style alias).
-riverctl map normal Super L spawn "$HOME/.config/river/lock-session.sh"
+map_us normal Super L spawn "$HOME/.config/river/lock-session.sh"
 riverctl map normal Super Escape spawn "$HOME/.config/river/lock-session.sh"
 # Full keybinding cheat sheet: Super+F1 or Super+? (Super+Shift+Slash).
 riverctl map normal Super F1 spawn "$HOME/.config/river/show-shortcuts.sh"
-riverctl map normal Super+Shift Slash spawn "$HOME/.config/river/show-shortcuts.sh"
+map_us normal Super+Shift Slash spawn "$HOME/.config/river/show-shortcuts.sh"
 
 # ---- dwm core binds ----------------------------------------------------------
-riverctl map normal Super Q close                    # Mod+Shift+Q in dwm
-riverctl map normal Super+Shift E exit
+map_us normal Super Q close                    # Mod+Shift+Q in dwm
+map_us normal Super+Shift E exit
 
-riverctl map normal Super J focus-view next
-riverctl map normal Super K focus-view previous
-riverctl map normal Super+Shift J swap next          # Mod+Shift+j (push)
-riverctl map normal Super+Shift K swap previous
+map_us normal Super J focus-view next
+map_us normal Super K focus-view previous
+map_us normal Super+Shift J swap next          # Mod+Shift+j (push)
+map_us normal Super+Shift K swap previous
 
 riverctl map normal Super Return zoom                # dwm Mod+Return = zoom
 
 # master/stack sizing, exactly like dwm
 # master ratio lives on Super+Ctrl+H/L now: bare Super+L is the lock key
 # (GNOME muscle memory), and bare Super+H would have been left without its pair.
-riverctl map normal Super+Control H send-layout-cmd rivertile "main-ratio -0.05"
-riverctl map normal Super+Control L send-layout-cmd rivertile "main-ratio +0.05"
-riverctl map normal Super+Shift H send-layout-cmd rivertile "main-count -1"
-riverctl map normal Super+Shift L send-layout-cmd rivertile "main-count +1"
+map_us normal Super+Control H send-layout-cmd rivertile "main-ratio -0.05"
+map_us normal Super+Control L send-layout-cmd rivertile "main-ratio +0.05"
+map_us normal Super+Shift H send-layout-cmd rivertile "main-count -1"
+map_us normal Super+Shift L send-layout-cmd rivertile "main-count +1"
 
 # orientation like dwm's mfact side change
 riverctl map normal Super Up    send-layout-cmd rivertile "main-location top"
@@ -108,38 +119,41 @@ riverctl map normal Super Down  send-layout-cmd rivertile "main-location bottom"
 riverctl map normal Super Left  send-layout-cmd rivertile "main-location left"
 
 # ---- tags: dwm tag model on ALT (view = tag set) --------------------------------
-# Alt+num goes through tag-switch.sh so the previous tag set is remembered;
-# Alt+Tab then flips between the two, exactly like dwm's view(0) (tagset[2]).
+# Direct river commands -- no spawned script, no state files. river itself
+# tracks the previous tag set (river/command/tags.zig: setFocusedTags,
+# toggleFocusedTags and focusPreviousTags all keep output.previous_tags in
+# sync), so the Alt+Tab toggle cannot desync from any other path (waybar's
+# tag clicks, Alt+Shift+num move-window, ...), and every bind is instant.
 for i in $(seq 1 9)
 do
     tags=$((1 << ($i - 1)))
-    riverctl map normal Alt $i spawn "$HOME/.config/river/tag-switch.sh set $i"
+    riverctl map normal Alt $i set-focused-tags $tags
     riverctl map normal Alt+Shift $i set-view-tags $tags             # Alt+Shift+num = move window
-    riverctl map normal Alt+Control $i spawn "$HOME/.config/river/tag-switch.sh toggle $i"
+    riverctl map normal Alt+Control $i toggle-focused-tags $tags
     riverctl map normal Alt+Shift+Control $i toggle-view-tags $tags
 done
 all_tags=$(((1 << 32) - 1))
-riverctl map normal Alt 0 spawn "$HOME/.config/river/tag-switch.sh all"
+riverctl map normal Alt 0 set-focused-tags 511
 riverctl map normal Alt+Shift 0 set-view-tags $all_tags
-riverctl map normal Alt Tab spawn "$HOME/.config/river/tag-switch.sh back"   # current <-> previous tag
+riverctl map normal Alt Tab focus-previous-tags   # current <-> previous tag set (dwm view(0))
 
 # ---- float / fullscreen / mouse ------------------------------------------------
 riverctl map normal Super+Shift Space toggle-float   # Win+Space = layout switch (see keyboard block)
-riverctl map normal Super F toggle-fullscreen
+map_us normal Super F toggle-fullscreen
 riverctl map-pointer normal Super BTN_LEFT move-view
 riverctl map-pointer normal Super BTN_RIGHT resize-view
 riverctl map-pointer normal Super BTN_MIDDLE toggle-float
 
 # ---- resizes -------------------------------------------------------------------
-riverctl map normal Super+Alt+Shift H resize horizontal -100
-riverctl map normal Super+Alt+Shift L resize horizontal 100
-riverctl map normal Super+Alt+Shift J resize vertical 100
-riverctl map normal Super+Alt+Shift K resize vertical -100
+map_us normal Super+Alt+Shift H resize horizontal -100
+map_us normal Super+Alt+Shift L resize horizontal 100
+map_us normal Super+Alt+Shift J resize vertical 100
+map_us normal Super+Alt+Shift K resize vertical -100
 
-riverctl map normal Super Period focus-output next
-riverctl map normal Super Comma focus-output previous
-riverctl map normal Super+Shift Period send-to-output next
-riverctl map normal Super+Shift Comma send-to-output previous
+map_us normal Super Period focus-output next
+map_us normal Super Comma focus-output previous
+map_us normal Super+Shift Period send-to-output next
+map_us normal Super+Shift Comma send-to-output previous
 
 # ---- volume (PipeWire — pactl is not installed) --------------------------------
 for mode in normal locked
@@ -152,7 +166,7 @@ do
 done
 
 # ---- media keys / screenshots / notifications (GNOME conventions) -------------
-riverctl map normal Alt b spawn "killall -USR1 waybar"   # dwm-style bar hide/show (toggles)
+map_us normal Alt b spawn "killall -USR1 waybar"   # dwm-style bar hide/show (toggles)
 riverctl map normal None XF86AudioPlay    spawn "$HOME/.config/river/media-key.sh playpause"
 riverctl map normal None XF86AudioPause   spawn "$HOME/.config/river/media-key.sh playpause"
 riverctl map normal None XF86AudioNext    spawn "$HOME/.config/river/media-key.sh next"
@@ -166,10 +180,6 @@ riverctl map normal Super+Shift Print     spawn "$HOME/.config/river/screenshot.
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/river-classic"
 mkdir -p "$STATE_DIR"
 BAR_LOG="$STATE_DIR/waybar.log"
-
-# tag history: river always starts on tag 1, so reset the two-slot state
-printf '1\n' > "$STATE_DIR/tags-current"
-rm -f "$STATE_DIR/tags-last"
 
 # ---- cross-session cleanup ---------------------------------------------------
 # logind has KillUserProcesses=false on this machine: a river child is not

@@ -16,6 +16,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Alt+1` … `Alt+9` | view tag 1–9 |
 | `Alt+0` | view all tags |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
+| `Alt+1` … `Alt+9`, `Alt+0` | instant (direct river binds, no spawned script) |
 | `Alt+Shift+1` … `Alt+Shift+9` | move the focused window to that tag |
 | `Alt+Shift+0` | put the focused window on every tag |
 | `Alt+Ctrl+1` … `Alt+Ctrl+9` | also show tag n (multi-view) |
