@@ -230,7 +230,14 @@ Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
   tty: it can show only a solid background and never accept the password. That
   is why the old separate invocations broke.
 - passes the session **wallpaper** (`-i … -s fill`, dark `-c` fallback), so the
-  lock surface is not a flat grey default.
+  lock surface is not a flat grey default. Since swaylock 1.8 dropped its
+  built-in clock, `config/river/lock-image.sh` bakes the **time and date** into
+  a blurred/darkened copy of the wallpaper at lock time (plus an "Enter
+  password to unlock" hint) and hands that image to swaylock; disable it with
+  `RIVER_LOCK_CLOCK=0`, override the formats with `RIVER_LOCK_CLOCK_FORMAT` /
+  `RIVER_LOCK_DATE_FORMAT` (e.g. `%I:%M %p`), or hide the hint with
+  `RIVER_LOCK_HINT=`. The clock is the time you locked at — the lock surface is
+  opaque, so a *live* clock would need gtklock (which has one built in) instead.
 - refuses to stack a second locker if one is already running; river also has the
   `patches/river-session-lock-release-on-client-death.patch` fix so a crashed
   locker releases the session instead of stranding it.

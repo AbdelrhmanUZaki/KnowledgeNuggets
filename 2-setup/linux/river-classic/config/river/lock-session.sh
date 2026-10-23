@@ -75,6 +75,17 @@ fi
 
 set -- swaylock
 w=$(wallpaper)
+# swaylock 1.8 has no clock of its own. Bake the time/date into the background
+# image at lock time (blurred + darkened wallpaper) unless disabled with
+# RIVER_LOCK_CLOCK=0; on any failure fall back to the plain wallpaper.
+if [ "${RIVER_LOCK_CLOCK:-1}" != "0" ] && [ -n "$w" ] && [ -x "$HOME/.config/river/lock-image.sh" ]; then
+    lockimg="$STATE_DIR/lock-screen.png"
+    if "$HOME/.config/river/lock-image.sh" "$w" "$lockimg" >>"$STATE_DIR/lock.log" 2>&1; then
+        w="$lockimg"
+    else
+        log "clock image generation failed; using the plain wallpaper"
+    fi
+fi
 if [ -n "$w" ]; then
     set -- "$@" -i "$w" -s fill
 else
