@@ -99,6 +99,7 @@ and `memory` modules do the rest.
 | `config/river/wifi-pick.sh` / `wifi-connect.sh` | network picker + password prompt (the secret goes in over stdin, never on the command line) |
 | `config/river/media-key.sh` | MPRIS play/pause/next via dbus (no playerctl needed) |
 | `config/river/gestures.py` | multi-finger gestures: 3-tap back, 4-tap forward, 3-swipe volume, 4-swipe brightness, physical press 1 = left / 2–3 = right |
+| `config/river/tag-switch.sh` | tag switching + **Alt+Tab history** (dwm's `view(0)` two-slot toggle between the current and previous tag set) |
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/unlock-session.sh` | releases a session that river left locked (black screen recovery) |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |

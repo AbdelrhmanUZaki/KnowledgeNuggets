@@ -49,17 +49,20 @@ riverctl map normal Super Down  send-layout-cmd rivertile "main-location bottom"
 riverctl map normal Super Left  send-layout-cmd rivertile "main-location left"
 
 # ---- tags: dwm tag model on ALT (view = tag set) --------------------------------
+# Alt+num goes through tag-switch.sh so the previous tag set is remembered;
+# Alt+Tab then flips between the two, exactly like dwm's view(0) (tagset[2]).
 for i in $(seq 1 9)
 do
     tags=$((1 << ($i - 1)))
-    riverctl map normal Alt $i set-focused-tags $tags                # Alt+num
+    riverctl map normal Alt $i spawn "$HOME/.config/river/tag-switch.sh set $i"
     riverctl map normal Alt+Shift $i set-view-tags $tags             # Alt+Shift+num = move window
-    riverctl map normal Alt+Control $i toggle-focused-tags $tags
+    riverctl map normal Alt+Control $i spawn "$HOME/.config/river/tag-switch.sh toggle $i"
     riverctl map normal Alt+Shift+Control $i toggle-view-tags $tags
 done
 all_tags=$(((1 << 32) - 1))
-riverctl map normal Alt 0 set-focused-tags $all_tags
+riverctl map normal Alt 0 spawn "$HOME/.config/river/tag-switch.sh all"
 riverctl map normal Alt+Shift 0 set-view-tags $all_tags
+riverctl map normal Alt Tab spawn "$HOME/.config/river/tag-switch.sh back"   # current <-> previous tag
 
 # ---- float / fullscreen / mouse ------------------------------------------------
 riverctl map normal Super+Shift Space toggle-float   # Win+Space = layout switch (see keyboard block)
@@ -104,6 +107,10 @@ riverctl map normal Super+Shift Print     spawn "$HOME/.config/river/screenshot.
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/river-classic"
 mkdir -p "$STATE_DIR"
 BAR_LOG="$STATE_DIR/waybar.log"
+
+# tag history: river always starts on tag 1, so reset the two-slot state
+printf '1\n' > "$STATE_DIR/tags-current"
+rm -f "$STATE_DIR/tags-last"
 
 # status bar — up to 3 tries, and every attempt must actually ATTACH to an output
 # (a bar that starts while the outputs are still coming up stays invisible)
