@@ -40,6 +40,8 @@ link() {
 echo "== Linux dotfiles =="
 link "$LINUX/bashrc"       "$HOME/.bashrc"
 link "$LINUX/bash_profile" "$HOME/.bash_profile"
+link "$LINUX/inputrc"      "$HOME/.inputrc"
+link "$LINUX/gitconfig"    "$HOME/.gitconfig"
 link "$LINUX/tmux.conf"    "$HOME/.tmux.conf"
 if command -v kanata >/dev/null 2>&1; then
   mkdir -p "$HOME/.config/kanata"

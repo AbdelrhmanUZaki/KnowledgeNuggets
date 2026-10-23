@@ -18,8 +18,10 @@ export PATH="$HOME/.opencode/bin:$PATH"
 # less friendly for non-text input files
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
-# Vim
-alias vi='nvim'
+# Vim (nvim when installed; fall back to the system vi otherwise)
+if command -v nvim >/dev/null 2>&1; then
+  alias vi='nvim'
+fi
 set -o vi
 
 # Terminal shortcuts
@@ -124,11 +126,18 @@ __fzf_history__() {
 bind -m vi-insert -x '"\C-r":__fzf_history__'
 bind -m vi-command -x '"\C-r":__fzf_history__'
 
-# System management
-alias u='sudo nala update && sudo nala upgrade'
-alias install='sudo nala install'
-alias r='sudo nala remove'
-alias search='sudo nala search'
+# System management (nala on machines that have it, apt otherwise)
+if command -v nala >/dev/null 2>&1; then
+    alias u='sudo nala update && sudo nala upgrade'
+    alias install='sudo nala install'
+    alias r='sudo nala remove'
+    alias search='sudo nala search'
+else
+    alias u='sudo apt update && sudo apt upgrade'
+    alias install='sudo apt install'
+    alias r='sudo apt remove'
+    alias search='apt search'
+fi
 alias reboot='systemctl reboot'
 alias poweroff='systemctl poweroff'
 alias suspend='systemctl suspend'
@@ -152,5 +161,14 @@ command -v batcat >/dev/null 2>&1 && ! command -v bat >/dev/null 2>&1 && alias b
 export PATH="$HOME/.local/bin:$PATH"
 alias ub="ssh zaki@ubuntu-server"
 
-# agent-vm
-source "/home/zaki/github/agent-vm/agent-vm.sh"
+# agent-vm (QEMU launcher) — only on machines that have it
+if [ -f "$HOME/github/agent-vm/agent-vm.sh" ]; then
+    source "$HOME/github/agent-vm/agent-vm.sh"
+fi
+
+# agent-vm: use the patched QEMU 10.2.1 when present. The stock build aborts
+# with "net_fill_rstate: Assertion size == 0 failed" when recv() on a socket
+# netdev returns EAGAIN (qemu-project/qemu#3285, still unfixed upstream).
+if [ -x "$HOME/.local/share/agent-vm/qemu-patched/qemu-system-x86_64" ]; then
+    export QEMU_SYSTEM_X86_64="$HOME/.local/share/agent-vm/qemu-patched/qemu-system-x86_64"
+fi

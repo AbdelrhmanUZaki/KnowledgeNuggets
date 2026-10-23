@@ -34,6 +34,8 @@ Copies/symlinks into `$HOME` (backs up existing files first):
 |---|---|
 | `linux/bashrc` | `~/.bashrc` |
 | `linux/bash_profile` | `~/.bash_profile` |
+| `linux/inputrc` | `~/.inputrc` (vi editing mode) |
+| `linux/gitconfig` | `~/.gitconfig` (identity, main branch, LFS) |
 | `linux/tmux.conf` | `~/.tmux.conf` |
 | `linux/kanata.kbd` | `~/.config/kanata/kanata.kbd` (if kanata installed) |
 | `../shared/nvim` | `~/.config/nvim` |

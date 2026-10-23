@@ -1,0 +1,19 @@
+# ~/.gitconfig - Linux (managed by 2-setup/linux/restore.sh)
+
+[user]
+	name = Abdelrahman Zaki
+	email = abdelrhmanuzaki@gmail.com
+
+[init]
+	defaultBranch = main
+
+# never auto-discover bare repositories (git >= 2.38)
+[safe]
+	bareRepository = explicit
+
+# Git LFS (install git-lfs to use LFS repositories)
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

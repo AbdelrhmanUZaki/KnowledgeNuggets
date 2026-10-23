@@ -15,6 +15,12 @@ RIVER_PID=$PPID
 # you; river-classic doesn't!)
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
 
+# ---- keyboard ------------------------------------------------------------------
+# Port of the old X11 setup (setxkbmap in .xinitrc/.xprofile): US + Arabic,
+# Win+Space switches groups, Caps = Escape, Menu = Win. River otherwise runs a
+# plain "us" keymap — GNOME's input sources do NOT apply to this session.
+riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_win us,ara
+
 # ---- launcher / terminal -----------------------------------------------------
 riverctl map normal Super P spawn fuzzel
 riverctl map normal Super+Shift Return spawn foot
@@ -56,7 +62,7 @@ riverctl map normal Alt 0 set-focused-tags $all_tags
 riverctl map normal Alt+Shift 0 set-view-tags $all_tags
 
 # ---- float / fullscreen / mouse ------------------------------------------------
-riverctl map normal Super Space toggle-float
+riverctl map normal Super+Shift Space toggle-float   # Win+Space = layout switch (see keyboard block)
 riverctl map normal Super F toggle-fullscreen
 riverctl map-pointer normal Super BTN_LEFT move-view
 riverctl map-pointer normal Super BTN_RIGHT resize-view

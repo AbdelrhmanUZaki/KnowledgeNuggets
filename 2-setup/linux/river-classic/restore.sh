@@ -34,6 +34,7 @@ echo "== river-classic config =="
 link "$HERE/config/river" "$HOME/.config/river"
 link "$HERE/config/waybar" "$HOME/.config/waybar"
 link "$HERE/config/foot" "$HOME/.config/foot"
+link "$HERE/config/dunst" "$HOME/.config/dunst"
 
 # wallpaper: keep a copy in a stable location (the init looks there first)
 mkdir -p "$HOME/.local/share/wallpapers"

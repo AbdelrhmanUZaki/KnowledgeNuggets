@@ -5,6 +5,8 @@ Linux dotfiles and tools (ParrotOS / Debian / Ubuntu). Full fresh-install checkl
 | Item | Purpose |
 |---|---|
 | `bashrc`, `bash_profile` | Shell (aliases, PATH, rtk-friendly prompt env) |
+| `inputrc` | Readline: vi editing mode (`C-l` clears) |
+| `gitconfig` | Git identity, `main` default branch, LFS filters |
 | `tmux.conf` | tmux |
 | `kanata.kbd` | Keyboard remap: caps = tap Esc / hold scroll layer, space hold = nav arrows |
 | `restore.sh` | Symlink everything above (plus [`../shared/`](../shared/)) into `$HOME` |

@@ -92,6 +92,7 @@ and `memory` modules do the rest.
 |---|---|
 | `config/river/init` | session bootstrap: paths, dbus env, keybinds, bar/dunst/swaybg, rivertile |
 | `config/foot/foot.ini` | terminal font size (14 pt default; `ctrl+=` / `ctrl+-` zoom live) |
+| `config/dunst/dunstrc` | notifications — Noto Sans 14, white cards, gold 3px frame (ported from the dwm setup) |
 | `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
 | `config/river/quick-settings.sh` | entry point for the panel (falls back to the dmenu) |
 | `config/river/quick-settings-dmenu.sh` | keyboard-only fallback menu |

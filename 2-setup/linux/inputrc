@@ -1,0 +1,5 @@
+# ~/.inputrc - Linux (managed by 2-setup/linux/restore.sh)
+# Readline runs in vi mode everywhere (bash, python REPL, etc.).
+
+set editing-mode vi
+"\C-l": clear-screen
