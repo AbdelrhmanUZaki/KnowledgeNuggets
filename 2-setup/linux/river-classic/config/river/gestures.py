@@ -126,6 +126,14 @@ BRIGHTNESS_STEP = 2        # percent per step (brightness.sh uses 2% as well)
 SWIPE_FINGERS = {3: "volume", 4: "brightness"}
 TAP_ACTIONS = {3: "back", 4: "forward"}
 
+# A 3+-finger tap must reach libinput as a *long press*, not a tap: libinput
+# always turns a quick 3-finger tap into a middle click, and that stray click
+# is what opens a new tab when the cursor is over a link.  It cannot be turned
+# off by configuration (libinput only offers LRM/LMR tap maps), so the
+# forwarder holds the finger-`up` frames for this long.  The daemon's own
+# back/forward action still fires instantly from the raw stream.
+TAP_HIDE_S = 0.55
+
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME",
                                     os.path.expanduser("~/.local/state")),
                      "river-classic")
@@ -304,6 +312,17 @@ class Engine:
         step = 1 if dy < 0 else -1          # finger up -> brighter / louder
         return [(kind, step * n)]
 
+    def tap_candidate(self, now):
+        """True while the live touch could still become a 3+-finger tap.
+
+        The forwarder hides the release frames of exactly these touches from
+        libinput (see TapHider), so a 3-finger tap never becomes libinput's
+        middle click.
+        """
+        return (self.started is not None and not self.saw_click
+                and not self.swiping and self.max_count >= 3
+                and now - self.started <= TAP_MAX_S)
+
     def _finish(self, now):
         tap = None
         if not self.saw_click and not self.swiping and self.started is not None:
@@ -313,6 +332,42 @@ class Engine:
                 tap = TAP_ACTIONS.get(self.max_count)
         self.reset()
         return tap
+
+
+# ── tap hide window (kills libinput's stray 3-finger middle click) ──────────
+class TapHider:
+    """Hold the finger-`up` frames of a 3+-finger tap for TAP_HIDE_S.
+
+    libinput reacts to a quick multi-finger tap with a middle click; that
+    cannot be disabled (only LRM/LMR tap maps exist), and it is why one
+    3-finger tap both goes "back" and opens a new tab in a browser.  Delaying
+    only the release frames makes libinput see a long press instead of a tap,
+    so no click is emitted.  Everything else is forwarded untouched.
+    """
+
+    def __init__(self, delay=TAP_HIDE_S):
+        self.delay = delay
+        self._pending = []
+        self._since = None
+
+    def feed(self, release, frame, candidate, now):
+        """Return the bytes to forward for this frame (b"" = held)."""
+        if release and candidate:
+            self._pending.append(frame)
+            if self._since is None:
+                self._since = now
+            return b""
+        return frame
+
+    def drain(self, now):
+        """Return held bytes once the hide window has elapsed."""
+        if (self._pending and self._since is not None
+                and now - self._since >= self.delay):
+            data = b"".join(self._pending)
+            self._pending = []
+            self._since = None
+            return data
+        return b""
 
 
 # ── uinput virtual mouse (back/forward only) ─────────────────────────────────
@@ -663,10 +718,20 @@ def run(parent=None, gestures_only=False):
 
         active_btn = None
         last_parent_check = 0.0
+        hider = TapHider()
 
         while not stopping["now"]:
             ready, _, _ = select.select([fd], [], [], 0.5)
             if not ready:
+                # a held tap release must still reach the clone even when no
+                # further touchpad event arrives to trigger the flush
+                if clone is not None and grabbed:
+                    pending = hider.drain(time.monotonic())
+                    if pending:
+                        try:
+                            clone.write(pending)
+                        except OSError:
+                            pass
                 if time.monotonic() - last_parent_check > 1.0:
                     last_parent_check = time.monotonic()
                     if not parent_alive(parent):
@@ -712,13 +777,22 @@ def run(parent=None, gestures_only=False):
                             active_btn = None
                     continue
 
+                # Capture the candidate state *before* feed_abs(): the last
+                # finger-up resets the engine.
+                candidate = (etype == EV_ABS and engine.tap_candidate(now))
+
                 if etype == EV_ABS:
                     for action in engine.feed_abs(code, value, now):
                         dispatch(mouse, action)
 
                 if out is not None:
-                    out += data[off:off + EVENT_SIZE]
+                    release = (etype == EV_ABS
+                               and code == ABS_MT_TRACKING_ID and value == -1)
+                    out += hider.feed(release, data[off:off + EVENT_SIZE],
+                                      candidate, now)
 
+            if out is not None:
+                out += hider.drain(time.monotonic())
             if out is not None and clone is not None:
                 try:
                     clone.write(out)
@@ -880,6 +954,48 @@ def selftest():
     print("%-46s %s" % ("partial X-only frame does not crash", "ok " if ok else "FAIL"))
     if not ok:
         failures.append("partial X-only frame")
+
+    # ── TapHider: hide only a 3+-finger tap's releases from libinput ───────
+    def hider_case(label, want_forwarded):
+        h = TapHider(delay=0.55)
+        out = h.feed(release=True, frame=b"UP", candidate=True, now=10.0)
+        early = h.drain(9.9)
+        late = h.drain(10.55)
+        ok = (out == b"" and early == b"" and late == b"UP") == want_forwarded
+        print("%-46s %s" % (label, "ok " if ok else "FAIL"))
+        if not ok:
+            failures.append(label)
+
+    # 3-finger tap: release held, then flushed after TAP_HIDE_S
+    hider_case("3-finger tap release hidden then flushed", True)
+
+    h = TapHider(delay=0.55)
+    ok = (h.feed(release=True, frame=b"UP", candidate=False, now=10.0) == b"UP"
+          and h.drain(10.6) == b"")
+    print("%-46s %s" % ("non-tap release forwarded immediately",
+                        "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("non-tap release forwarded")
+
+    eng = Engine(1000, 1000)
+    t = 20.0
+    for i in range(3):
+        eng.feed_abs(ABS_MT_SLOT, i, t)
+        eng.feed_abs(ABS_MT_TRACKING_ID, 400 + i, t)
+        eng.feed_abs(ABS_MT_POSITION_X, 500 + i * 7, t)
+        eng.feed_abs(ABS_MT_POSITION_Y, 500 + i * 5, t)
+    ok = eng.tap_candidate(t + 0.05)
+    print("%-46s %s" % ("3 fingers down is a tap candidate",
+                        "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("3-finger tap candidate")
+
+    eng.note_click(True)
+    ok = not eng.tap_candidate(t + 0.06)
+    print("%-46s %s" % ("physical click is not a tap candidate",
+                        "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("click not a tap candidate")
 
     print("\n%s" % ("all good" if not failures else "FAILURES: %s" % failures))
     return 1 if failures else 0

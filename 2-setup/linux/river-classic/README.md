@@ -497,8 +497,11 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   and tap-and-drag. The swipe reference restarts whenever the finger count
   changes, so a palm landing mid-gesture cannot bend it, and the steps are
   batched into one `brightness.sh bump` / `wpctl` call per frame.
-  One documented side effect: libinput still emits its own **middle click on a
-  3-finger tap** (plus the back action); 1/2-finger taps are untouched.
+  libinput would also emit a **middle click on a 3-finger tap** (the stray
+  click that opens a link in a new tab); the forwarder now hides just the
+  release frames of that tap from libinput for 0.55 s, so libinput sees a long
+  press instead of a tap. The back action still fires instantly; 1/2-finger
+  taps are untouched.
   Install the udev rule once (it covers the gesture daemon **and** kanata; both
   are spawned by `init`):
   ```sh
