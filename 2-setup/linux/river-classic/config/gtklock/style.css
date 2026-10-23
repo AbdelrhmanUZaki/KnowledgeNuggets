@@ -1,0 +1,28 @@
+/* gtklock style: match the generated lock-screen design (big bold clock,
+ * readable date) on top of the blurred/darkened wallpaper.
+ *
+ * Loaded automatically from ~/.config/gtklock/style.css (the repo
+ * config/gtklock directory is symlinked there by restore.sh).
+ */
+
+window #clock-label {
+    font-family: "DejaVu Sans", "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 96pt;
+    color: #ffffff;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.65);
+}
+
+window #date-label {
+    font-family: "DejaVu Sans", "Noto Sans", sans-serif;
+    font-size: 18pt;
+    color: #e8edf2;
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.65);
+}
+
+/* Keep the password entry readable against the wallpaper. */
+window #input-field,
+window #unlock-button {
+    font-family: "DejaVu Sans", "Noto Sans", sans-serif;
+    font-size: 14pt;
+}

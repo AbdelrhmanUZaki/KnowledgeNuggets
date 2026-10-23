@@ -13,9 +13,11 @@
 #     the opposite of what we need.
 #   * The default swaylock background is a solid colour.  We pass the same
 #     wallpaper as the session so the lock screen looks intentional.
-#   * The default locker is the simple swaylock-in-foot path described above.
-#     gtklock (GTK/PAM form + its powerbar module) stays in the repo as an
-#     opt-in experiment: run with RIVER_LOCKER=gtklock to use it.
+#   * Default locker is gtklock: it draws a *live* clock and date (updates
+#     every second), which swaylock 1.8 cannot do at all.  The same blurred,
+#     darkened wallpaper is generated for it by lock-image.sh (text disabled —
+#     gtklock renders the clock itself).  Force the old swaylock path with
+#     RIVER_LOCKER=swaylock; that one gets a static clock baked into the image.
 #
 # River has a matching patch (patches/river-session-lock-release-on-client-death.patch)
 # that releases the session if the locker dies, so a crash cannot leave the
@@ -48,20 +50,29 @@ if pgrep -x gtklock >/dev/null 2>&1 || pgrep -x swaylock >/dev/null 2>&1; then
     exit 0
 fi
 
-# Keep the old, simple setup as the default: swaylock inside foot.  gtklock is
-# still fully supported (config + powerbar + Switch User wiring are untouched)
-# but now opt-in, so switching back is just RIVER_LOCKER=gtklock.
-LOCKER="${RIVER_LOCKER:-swaylock}"
+# gtklock is the default because it is the only installed locker with a live
+# clock.  RIVER_LOCKER=swaylock keeps the old simple path (static clock).
+LOCKER="${RIVER_LOCKER:-gtklock}"
 
 if [ "$LOCKER" = gtklock ]; then
     if command -v gtklock >/dev/null 2>&1; then
         set -- gtklock
         w=$(wallpaper)
+        # Blurred/darkened background, no baked text: gtklock draws the live
+        # clock/date itself (style.css sizes it).  Cache it until the wallpaper
+        # changes — nothing about it is time-dependent.
+        if [ -n "$w" ] && [ -x "$HOME/.config/river/lock-image.sh" ]; then
+            lockbg="$STATE_DIR/lock-bg.png"
+            if [ ! -f "$lockbg" ] || [ "$w" -nt "$lockbg" ]; then
+                RIVER_LOCK_TEXT=0 "$HOME/.config/river/lock-image.sh" "$w" "$lockbg"                     >>"$STATE_DIR/lock.log" 2>&1 || lockbg=""
+            fi
+            [ -f "$lockbg" ] && w="$lockbg"
+        fi
         [ -n "$w" ] && set -- "$@" --background "$w"
         # Adwaita-dark is part of GTK3 on Ubuntu; gtklock ignores an unknown
         # theme rather than failing, so this is safe everywhere.
         set -- "$@" --gtk-theme Adwaita-dark
-        log "locking with gtklock (background: ${w:-none})"
+        log "locking with gtklock (live clock; background: ${w:-none})"
         exec "$@"
     fi
     log "RIVER_LOCKER=gtklock but gtklock is not installed; falling back to swaylock"

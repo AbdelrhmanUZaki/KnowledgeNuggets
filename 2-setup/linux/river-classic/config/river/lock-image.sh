@@ -13,6 +13,8 @@
 #        RIVER_LOCK_CLOCK_FORMAT=%H:%M
 #        RIVER_LOCK_DATE_FORMAT=%A, %d %B
 #        RIVER_LOCK_HINT="Enter password to unlock" (empty disables)
+#        RIVER_LOCK_TEXT=0          blur/darken only (used as gtklock's
+#                                   background: gtklock draws a live clock)
 set -u
 
 wall="${1:-}"
@@ -41,6 +43,7 @@ LOCK_WALL="$wall" LOCK_OUT="$out" LOCK_SIZE="$size" \
 LOCK_CLOCK="${RIVER_LOCK_CLOCK_FORMAT:-%H:%M}" \
 LOCK_DATE="${RIVER_LOCK_DATE_FORMAT:-%A, %d %B}" \
 LOCK_HINT="${RIVER_LOCK_HINT-Enter password to unlock}" \
+LOCK_TEXT="${RIVER_LOCK_TEXT:-1}" \
 python3 - <<'PY'
 import os
 import sys
@@ -81,27 +84,28 @@ bold = font("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", int(height *
 regular = font("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", int(height * 0.045))
 small = font("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", int(height * 0.026))
 
-time_text = datetime.now().strftime(os.environ.get("LOCK_CLOCK", "%H:%M"))
-date_text = datetime.now().strftime(os.environ.get("LOCK_DATE", "%A, %d %B"))
+if os.environ.get("LOCK_TEXT", "1") != "0":
+    time_text = datetime.now().strftime(os.environ.get("LOCK_CLOCK", "%H:%M"))
+    date_text = datetime.now().strftime(os.environ.get("LOCK_DATE", "%A, %d %B"))
 
-def centered(text, f, y, fill=(255, 255, 255, 255), shadow=(0, 0, 0, 170)):
-    box = draw.textbbox((0, 0), text, font=f)
-    x = (width - (box[2] - box[0])) // 2 - box[0]
-    # 2 px offset shadow for legibility on any wallpaper
-    draw.text((x + 2, y + 2), text, font=f, fill=shadow)
-    draw.text((x, y), text, font=f, fill=fill)
+    def centered(text, f, y, fill=(255, 255, 255, 255), shadow=(0, 0, 0, 170)):
+        box = draw.textbbox((0, 0), text, font=f)
+        x = (width - (box[2] - box[0])) // 2 - box[0]
+        # 2 px offset shadow for legibility on any wallpaper
+        draw.text((x + 2, y + 2), text, font=f, fill=shadow)
+        draw.text((x, y), text, font=f, fill=fill)
 
-# Clock slightly above centre, date underneath, hint near the bottom.
-clock_h = int(height * 0.165)
-centered(time_text, bold, int(height * 0.34))
-centered(date_text, regular, int(height * 0.34) + clock_h + int(height * 0.04),
-         fill=(235, 240, 245, 255))
+    # Clock slightly above centre, date underneath, hint near the bottom.
+    clock_h = int(height * 0.165)
+    centered(time_text, bold, int(height * 0.34))
+    centered(date_text, regular, int(height * 0.34) + clock_h + int(height * 0.04),
+             fill=(235, 240, 245, 255))
 
-hint = os.environ.get("LOCK_HINT", "")
-if hint:
-    box = draw.textbbox((0, 0), hint, font=small)
-    draw.text(((width - (box[2] - box[0])) // 2 - box[0], int(height * 0.90)),
-              hint, font=small, fill=(220, 225, 230, 170))
+    hint = os.environ.get("LOCK_HINT", "")
+    if hint:
+        box = draw.textbbox((0, 0), hint, font=small)
+        draw.text(((width - (box[2] - box[0])) // 2 - box[0], int(height * 0.90)),
+                  hint, font=small, fill=(220, 225, 230, 170))
 
 img.convert("RGB").save(out, "PNG")
 PY

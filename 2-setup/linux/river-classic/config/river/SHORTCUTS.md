@@ -112,12 +112,12 @@ the keyboard directly, so the input udev rule must be installed
 
 - Lock from the System Menu, with `Super+Escape`, or from the keyboard-only
   fallback menu. All of them call the same `lock-session.sh`.
-- The lock screen is **swaylock inside foot** (simple, wallpaper background,
-  with the time/date baked into a blurred copy of the wallpaper at lock time;
-  `RIVER_LOCK_CLOCK=0` disables the clock). gtklock + its power bar remain
-  available opt-in with `RIVER_LOCKER=gtklock ~/.config/river/lock-session.sh`
-  — gtklock is the one with a *live* clock. GDM is the login manager, not an
-  in-session locker: it can only start or end a session.
+- The lock screen is **gtklock** (GTK/PAM, live clock + date) over a blurred,
+  darkened copy of the wallpaper, with an icon-only power bar (Switch user /
+  power / reboot). Force the old **swaylock inside foot** path with
+  `RIVER_LOCKER=swaylock` — that one gets a *static* clock baked into the
+  image. GDM is the login manager, not an in-session locker: it can only start
+  or end a session.
 - **Switch user** (non-destructive, nothing in-app is closed) is in the
   System Menu / keyboard-only menu / power menu, and calls
   `config/river/switch-user.sh`: it releases the keyboard (kanata) and
