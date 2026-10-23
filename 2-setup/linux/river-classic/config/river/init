@@ -137,16 +137,6 @@ riverctl map normal None XF86AudioPrev    spawn "$HOME/.config/river/media-key.s
 riverctl map normal None Print            spawn "$HOME/.config/river/screenshot.sh full"   # Print = full screen
 riverctl map normal Super+Shift Print     spawn "$HOME/.config/river/screenshot.sh"        # Shift+Print = region
 
-# ---- Neru: keyboard-driven navigation ------------------------------------------
-# Neru is started as a systemd user service (neru services install). On Wayland
-# its own [hotkeys] are off by default, so trigger the modes from River. Use the
-# absolute path: GDM does not put ~/.local/bin on River's PATH.
-riverctl map normal Super+Shift N spawn "$HOME/.local/bin/neru hints"
-riverctl map normal Super+Shift G spawn "$HOME/.local/bin/neru grid"
-riverctl map normal Super+Shift C spawn "$HOME/.local/bin/neru recursive_grid"
-riverctl map normal Super+Shift B spawn "$HOME/.local/bin/neru bisect"
-riverctl map normal Super+Shift S spawn "$HOME/.local/bin/neru scroll"
-
 # ---- autostart -----------------------------------------------------------------
 # persistent state dir — /tmp is wiped on every boot, which silently killed the bar
 # (its log redirect failed -> waybar never started)
@@ -270,12 +260,11 @@ riverctl input '*Touchpad' scroll-factor 0.3
 # user switching without leaving a stuck respawn loop behind. ↓ for the
 # actual mapping, see config/river/SHORTCUTS.md / docs in the README.
 
-# ---- Neru service ---------------------------------------------------------------
-# River does not start graphical-session.target, so neru.service (WantedBy it)
-# would otherwise never autostart. The user manager keeps its own environment,
-# separate from this shell, so import the display variables first.
+# ---- graphical-session env for the user manager --------------------------------
+# river does not start graphical-session.target, so the user manager needs the
+# display environment imported explicitly — otherwise (WantedBy=
+# graphical-session.target) units would start environment-blind.
 systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null || true
-systemctl --user start neru.service 2>/dev/null || true
 
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300

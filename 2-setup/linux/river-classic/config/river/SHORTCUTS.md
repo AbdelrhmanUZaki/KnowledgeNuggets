@@ -108,28 +108,6 @@ The config is `~/.config/kanata/kanata.kbd`, linked from the repo. Kanata reads
 the keyboard directly, so the input udev rule must be installed
 (`sudo ./install.sh rules`).
 
-## Neru navigation
-
-Neru runs as a systemd user service and draws its own overlay. On Wayland its
-`[hotkeys]` are off by default, so the modes are bound in River:
-
-| Keys | Action |
-|---|---|
-| `Super+Shift+N` | hints (clickable elements) |
-| `Super+Shift+G` | grid |
-| `Super+Shift+C` | recursive grid |
-| `Super+Shift+B` | bisect |
-| `Super+Shift+S` | scroll |
-| `Escape` | exit the active mode |
-
-Config: `~/.config/neru/config.toml`. Service logs:
-`journalctl --user -u neru.service`; diagnostics: `neru doctor`.
-
-Neru's on-screen mode and sticky-modifier badges are disabled on River: v1.59.0
-redraws them every 16 ms, which can fill the Wayland connection during a long
-mode and leave the keyboard grabbed. Modifier handling and all modes still
-work; use `neru status` to see the active mode.
-
 ## Locking and recovery
 
 - Lock from the System Menu, with `Super+Escape`, or from the keyboard-only

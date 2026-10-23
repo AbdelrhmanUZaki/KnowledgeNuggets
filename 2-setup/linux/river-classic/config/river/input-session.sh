@@ -44,6 +44,7 @@ PAUSE_FLAG="$STATE_DIR/input-paused"
 KANATA_GAVE_UP="$STATE_DIR/input-kanata-gave-up"
 GESTURES_GAVE_UP="$STATE_DIR/input-gestures-gave-up"
 KANATA_PIDFILE="$STATE_DIR/input-kanata.pid"
+KANATA_SUP_PIDFILE="$STATE_DIR/input-kanata-supervisor.pid"
 SUPERVISOR_PIDFILE="$STATE_DIR/input-supervisor.pid"
 WATCH_PIDFILE="$STATE_DIR/input-watcher.pid"
 LOCK="$STATE_DIR/input-session.lock"
@@ -75,10 +76,10 @@ pid_of_file() {
 }
 
 # ------------------------------------------------------------------ kanata --
-# The old init's `if ! pgrep -x kanata; then kanata ... &` block, plus:
-#   * pause-gated spawn,
-#   * a once-per-session probe so a kanata that dies instantly (broken udev
-#     rule, bad config) does not get respawned in a tight loop.
+# Managed kanata: a separate, tiny supervisor loop so a dying kanata is
+# restarted even while gestures.py (running as the *gesture* supervisor's
+# foreground child) is busy.  `pause` still gates it, and `gave-up` stays
+# sticky for the session once kanata has failed to start.
 kanata_once() {
     (
         flock -x 9 2>/dev/null
@@ -109,6 +110,23 @@ kanata_once() {
             log "kanata exited immediately (pid $kp); gave up until relogin"
         fi
     ) >>"$LOG" 2>&1 9>>"$LOCK"
+}
+
+kanata_loop() {
+    (
+        while river_alive; do
+            if [ -e "$PAUSE_FLAG" ] || [ -e "$KANATA_GAVE_UP" ]; then
+                sleep 2
+                continue
+            fi
+            if ! pgrep -x kanata >/dev/null 2>&1; then
+                kanata_once
+            fi
+            sleep 2
+        done
+        rm -f "$KANATA_PIDFILE" "$KANATA_SUP_PIDFILE"
+        log "river exited; kanata supervisor stopped"
+    ) >>"$LOG" 2>&1 9>&- &
 }
 
 # ---------------------------------------------------------------- gestures --
@@ -213,7 +231,7 @@ do_start() {
         # Fresh state: no pause flag, no gave-up markers.  Old orphan files
         # from any previous session of this user are stale and go away.
         rm -f "$PAUSE_FLAG" "$KANATA_GAVE_UP" "$GESTURES_GAVE_UP" \
-              "$KANATA_PIDFILE" "$SUPERVISOR_PIDFILE" "$WATCH_PIDFILE"
+              "$KANATA_PIDFILE" "$SUPERVISOR_PIDFILE" "$KANATA_SUP_PIDFILE" "$WATCH_PIDFILE"
         # The session watcher is what keeps pause/resume in sync with the
         # seat after a Switch User round trip (and after GDM's re-auth path,
         # which does NOT run gtklock's unlock-command).
@@ -222,6 +240,9 @@ do_start() {
         gestures_loop
         echo "$!" >"$SUPERVISOR_PIDFILE"
         log "started gesture supervisor (pid $!, river $river_pid_arg)"
+        kanata_loop
+        echo "$!" >"$KANATA_SUP_PIDFILE"
+        log "started kanata supervisor (pid $!, river $river_pid_arg)"
     ) 9>>"$LOCK"
     # kanata is spawned by this run (the supervisor only manages gestures.py
     # so the pause response stays immediate).
@@ -299,6 +320,12 @@ do_status() {
         printf 'session watcher    running (pid %s)\n' "$w"
     else
         echo 'session watcher    stopped'
+    fi
+    ks=$(pid_of_file "$KANATA_SUP_PIDFILE" 2>/dev/null)
+    if [ -n "$ks" ]; then
+        printf 'kanata supervisor  running (pid %s)\n' "$ks"
+    else
+        echo 'kanata supervisor  stopped'
     fi
     if k=$(pid_of_file "$KANATA_PIDFILE" 2>/dev/null) && pgrep -x kanata >/dev/null 2>&1; then
         printf 'kanata             running (pid %s)\n' "$k"
