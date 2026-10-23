@@ -25,8 +25,9 @@ die()  { printf '\033[1;31m[river]\033[0m %s\n' "$*" >&2; exit 1; }
 APT_PACKAGES=(
   # session + bar
   waybar foot fuzzel dunst swaylock
-  # screen capture + clipboard
-  grim slurp wl-clipboard cliphist
+  # screen capture (wl-copy for screenshots); CopyQ is the 17.x AppImage,
+  # installed by install-copyq17.sh — the distro's 13.0.0 crashes on Wayland
+  grim slurp wl-clipboard
   # system panel / desktop integration
   pavucontrol network-manager-gnome blueman
   gnome-calendar gnome-control-center
@@ -161,12 +162,14 @@ install_rules() {
 
 case "${1:-all}" in
   deps)    install_pkgs "${APT_PACKAGES[@]}" "${BUILD_PACKAGES[@]}" ;;
+  copyq)   "$HERE/install-copyq17.sh" ;;
   build)   build_compositor ;;
   session) install_session ;;
   rules)   install_rules ;;
   config)  "$HERE/restore.sh" ;;
   all)
     install_pkgs "${APT_PACKAGES[@]}" "${BUILD_PACKAGES[@]}"
+    "$HERE/install-copyq17.sh"
     build_compositor
     install_session
     install_rules
@@ -180,5 +183,5 @@ $(log "done — now:")
 
 EOF
     ;;
-  *) die "unknown phase: $1 (use deps|build|session|rules|config|all)" ;;
+  *) die "unknown phase: $1 (use deps|copyq|build|session|rules|config|all)" ;;
 esac

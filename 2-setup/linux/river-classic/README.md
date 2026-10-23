@@ -18,12 +18,17 @@ fork of river 0.3), built with Zig 0.16 against wlroots 0.20.2.
 
 ```bash
 cd 2-setup/linux/river-classic
-./install.sh          # deps (sudo) → build wlroots + river → GDM entry → config
+./install.sh          # deps (sudo) → CopyQ 17 → build wlroots + river → GDM entry → config
 ```
 
 Then **log out** of GNOME and pick **river-classic** in the gear menu.
 
-Phases can be run separately: `./install.sh deps | build | session | rules | config`.
+Phases can be run separately: `./install.sh deps | copyq | build | session | rules | config`.
+
+`./install.sh copyq` downloads the CopyQ 17.0.0 AppImage (44 MB, SHA-512
+pinned) to `~/.local/opt` and creates `~/.local/bin/copyq`. It is deliberately
+not the APT package: Ubuntu 26.04 ships 13.0.0, which crashes when restoring
+large images under Qt 6.10/Wayland.
 
 Re-apply the config at any time (this is what `2-setup/linux/restore.sh` calls):
 
@@ -90,7 +95,8 @@ and `memory` modules do the rest.
 
 | File | Role |
 |---|---|
-| `config/river/init` | session bootstrap: paths, dbus env, keybinds, kanata autostart, bar/dunst/swaybg, rivertile |
+| `config/river/init` | session bootstrap: paths, dbus env, keybinds, kanata autostart, CopyQ setup, bar/dunst/swaybg, rivertile |
+| `install-copyq17.sh` | downloads CopyQ 17.0.0 AppImage to `~/.local/opt`, verifies SHA-512, creates `~/.local/bin/copyq` |
 | `config/foot/foot.ini` | terminal font size (14 pt default; `ctrl+=` / `ctrl+-` zoom live) |
 | `config/dunst/dunstrc` | notifications — Noto Sans 14, white cards, gold 3px frame (ported from the dwm setup) |
 | `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
@@ -103,7 +109,8 @@ and `memory` modules do the rest.
 | `config/river/scroll-speed.sh` | touchpad scroll speed: live apply + persist in `init` |
 | `config/river/unlock-session.sh` | releases a session that river left locked (black screen recovery) |
 | `config/river/screenshot.sh` | grim + slurp region/full capture, auto clipboard |
-| `config/river/clipboard.sh` | clipboard history + persistence: `cliphist` text/image recorders, fuzzel picker (`Super+V`) |
+| `config/river/copyq-setup.sh` | CopyQ preferences + the automatic re-own command (idempotent; run by `init`) |
+| `config/river/copyq-keep.js` | CopyQ script: re-own each selection so text/images survive the source app closing |
 | `config/river/power-menu.sh` | session actions (also available in the panel) |
 | `config/waybar/config.jsonc` | bar layout, module formats, click actions |
 | `config/waybar/style.css` | the solarized dark theme (GNOME-style flat surface) |
@@ -127,7 +134,7 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Super+Shift+Return` | terminal (foot) |
 | `Super+P` | launcher (fuzzel) |
-| `Super+V` | clipboard history (cliphist + fuzzel) |
+| `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+Return` | zoom / `Super+H` `Super+L` master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
@@ -150,17 +157,41 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 
 ### Clipboard
 
-`Super+V` opens fuzzel with the newest 200 entries. Two recorders — `wl-paste
---type text` and `--type image` — feed `cliphist`; images are restored correctly
-because `wl-copy` auto-detects the image type (`cliphist decode | wl-copy` was
-verified byte-for-byte for PNG).
+`Super+V` toggles the **CopyQ 17** window: searchable history (newest first),
+text, images, pinned items and tags. Select an item with Enter or double-click;
+CopyQ copies it, closes the window and returns focus to the previous app, where
+you paste with `Ctrl+V`. There is no tray icon and no notification; the panel's
+clipboard button opens the same window.
 
-Each new item is immediately re-copied through `wl-copy`, which takes ownership:
-the selection therefore **survives the app that copied it closing** (Wayland
-normally drops it). The trade-off is that only the recorded MIME survives — rich
-text/HTML becomes plain text, images keep their image type. History is capped at
-200 items and includes anything copied, **passwords included**;
-`~/.config/river/clipboard.sh clear` wipes the history and the current selection.
+CopyQ is a Qt app using Qt's light default style, and river 0.3 has no
+per-window rules, so it opens as a normal tiled window rather than a popup.
+`Super+Shift+Space` toggles floating if you prefer a separate window; the
+clipboard behavior is unaffected.
+
+**Persistence:** Wayland normally drops a selection when the app that owns it
+exits. CopyQ's monitor stores the history, but storing alone does not keep the
+selection alive. `copyq-keep.js` installs a CopyQ automatic command that re-owns
+every new selection through `copy(item)`; CopyQ then owns it until the next
+copy, so text and images survive the source closing. The re-copy marks the item
+`application/x-copyq-owner` and the command aborts on that marker, so it cannot
+loop. It keeps all non-image MIME types plus one image type, avoiding Qt's
+synthetic image-conversion explosion. Verified with text and several 1920×1200
+PNGs: source killed → `wl-paste` / `wl-paste --type image` still return the
+content, and restoring the image from history does not crash the server.
+
+Use **CopyQ 17** (`~/.local/bin/copyq`), not Ubuntu's 13.0.0: 13 reads the
+Wayland clipboard and stores images, but crashes when restoring large images
+after the first one (Qt 6.10/river). `./install.sh copyq` installs the 17.0.0
+AppImage with a pinned SHA-512 (`install-copyq17.sh`). CopyQ keeps its data in
+`~/.local/share/copyq`; v17 migrated the old v13 profile on first run. The
+window/paste settings are applied at login by `copyq-setup.sh`. Images are
+re-encoded by Qt on restore (the 1×1 test PNG went 70 → 91 bytes; screenshots
+keep their dimensions), so the visual content is preserved, not necessarily the
+original bytes.
+
+Everything copied is in the history, **passwords included**. Delete sensitive
+items in the CopyQ window (select + Delete); clearing all:
+`copyq eval 'for (var i=count()-1;i>=0;--i) remove(i)'`.
 
 ---
 
@@ -169,12 +200,20 @@ text/HTML becomes plain text, images keep their image type. History is capped at
 - **`riverctl map … spawn` takes one command string, not argv.** `spawn
   "/path/script arg"` works; `spawn "/path/script" arg` is accepted by `map` but
   fails on every keypress with `error(command): spawn: too many arguments` in
-  river's log (the screenshot and clipboard binds both pass one quoted string).
-- **A clipboard keep-alive must ignore its own re-copy.** `cliphist` 0.5 does
-  **not** dedupe the copy made by `wl-copy`, so a naive `store → wl-copy` watcher
-  re-triggers itself forever. `clipboard.sh store` remembers a SHA-256 per MIME in
-  `$STATE_DIR/cliphist-last-*` and exits on identical data (two watcher events per
-  real copy, verified). The hash is per login; `clear` removes it.
+  river's log (the screenshot and CopyQ binds both pass one quoted string).
+  River's own environment does **not** include `~/.local/bin` — the `PATH`
+  export at the top of `init` only reaches its children — so the CopyQ bind
+  uses the absolute `$HOME/.local/bin/copyq`.
+- **Use CopyQ 17, not the APT 13.0.0.** 13.0.0 reads the Wayland clipboard and
+  stores text/images, but restoring a large image after the first one crashes
+  the server (`ERROR: Connection lost!`) and its own image restore can duplicate
+  history items. 17.0.0 (AppImage, bundled Qt 6.11.1) survives repeated
+  1920×1200 PNG restores with a stable item count.
+- **A CopyQ re-own command must ignore CopyQ's own selections.** `copy(item)`
+  adds `application/x-copyq-owner`; `copyq-keep.js` aborts when that MIME is
+  already present, and copies only the useful formats (text/HTML/URI plus one
+  image) instead of every Qt image conversion. Re-copying the full conversion
+  set into CopyQ 13's own image selection was what killed the server.
 - **Audio is PipeWire, not PulseAudio.** `pactl` does not exist here; use `wpctl`
   (`wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5`, `wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle`).
 - **Brightness must go through logind.** `brightnessctl` direct writes are denied

@@ -23,7 +23,7 @@ riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_w
 
 # ---- launcher / terminal -----------------------------------------------------
 riverctl map normal Super P spawn fuzzel
-riverctl map normal Super V spawn "$HOME/.config/river/clipboard.sh pick"   # clipboard history
+riverctl map normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
 riverctl map normal Super+Shift Return spawn foot
 
 # ---- dwm core binds ----------------------------------------------------------
@@ -128,18 +128,14 @@ if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]
     fi
 fi
 
-# ---- clipboard history + persistence (cliphist): Super+V picker ----------------
-# Two recorders: plain text and images.  clipboard.sh re-copies each new item
-# through wl-copy so the selection survives the source app closing; a content
-# hash prevents the re-copy from triggering an endless watcher loop.
-if command -v cliphist >/dev/null 2>&1 && command -v wl-paste >/dev/null 2>&1; then
-    rm -f "$STATE_DIR"/cliphist-last-*
-    if ! pgrep -f "wl-paste --type text --watch .*clipboard.sh store text" >/dev/null 2>&1; then
-        wl-paste --type text --watch "$HOME/.config/river/clipboard.sh" store text >>"$STATE_DIR/cliphist.log" 2>&1 &
-    fi
-    if ! pgrep -f "wl-paste --type image --watch .*clipboard.sh store image" >/dev/null 2>&1; then
-        wl-paste --type image --watch "$HOME/.config/river/clipboard.sh" store image >>"$STATE_DIR/cliphist.log" 2>&1 &
-    fi
+# ---- clipboard manager (CopyQ 17): Super+V -------------------------------------
+# CopyQ reads/writes the Wayland clipboard natively (wlr-data-control).  The
+# automatic command in copyq-keep.js re-owns every new selection, so text and
+# large images survive the source app closing; copy(item) marks it CopyQ-owned
+# so the command cannot loop.  setup.sh also applies the window/paste settings.
+# Use the 17.x AppImage wrapper: Ubuntu's 13.0.0 crashes restoring large images.
+if [ -x "$HOME/.local/bin/copyq" ] && [ -x "$HOME/.config/river/copyq-setup.sh" ]; then
+    QT_QPA_PLATFORM=wayland "$HOME/.config/river/copyq-setup.sh" >>"$STATE_DIR/copyq.log" 2>&1 &
 fi
 
 # status bar — up to 3 tries, and every attempt must actually ATTACH to an output
