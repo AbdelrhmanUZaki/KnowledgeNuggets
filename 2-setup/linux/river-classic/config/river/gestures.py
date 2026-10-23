@@ -554,6 +554,18 @@ def log(msg):
 def parent_alive(pid):
     if not pid:
         return True
+    # os.kill(pid, 0) succeeds for a zombie.  river launches init through a
+    # short-lived sh wrapper, which can leave exactly such a zombie; reading
+    # /proc state makes the touchpad grab get released even in that case.
+    try:
+        with open("/proc/%d/stat" % pid, "r") as fh:
+            data = fh.read()
+        state = data.rsplit(") ", 1)[1].split()[0]
+        return state not in ("Z", "X")
+    except (FileNotFoundError, ProcessLookupError):
+        return False
+    except (PermissionError, OSError, IndexError):
+        pass
     try:
         os.kill(pid, 0)
         return True

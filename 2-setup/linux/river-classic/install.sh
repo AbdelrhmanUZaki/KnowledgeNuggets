@@ -7,8 +7,9 @@
 #   ./install.sh session    # GDM entry + mask Ubuntu's waybar.service
 #   ./install.sh config     # symlink the config into ~/.config
 #
-# Safe to re-run. Nothing outside ~/.local, ~/.config and the two files listed
-# under "session" is touched.
+# Safe to re-run. Nothing outside ~/.local, ~/.config and the system files
+# managed by the "session"/"rules" phases (GDM desktop entry, udev rule,
+# packaged kanata unit state) is touched.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,6 +71,21 @@ install_pkgs() {
   else
     log "all packages present"
   fi
+  disable_packaged_kanata_service
+}
+
+# The kanata package ships a system unit (WantedBy=default.target) that expects
+# /etc/kanata/config.kbd and runs as the _kanata user.  river-classic starts
+# kanata per session from init with the shared config; the package unit must
+# never be left enabled, or it can fail at boot or grab the keyboard outside
+# the graphical session (including GDM/GNOME after a river logout).
+disable_packaged_kanata_service() {
+  if ! systemctl cat kanata.service >/dev/null 2>&1; then
+    return 0
+  fi
+  log "disabling the packaged kanata.service (session-scoped kanata only)"
+  sudo systemctl disable --now kanata.service >/dev/null 2>&1 || true
+  sudo systemctl reset-failed kanata.service >/dev/null 2>&1 || true
 }
 
 build_compositor() {
@@ -166,6 +182,9 @@ install_rules() {
   sudo udevadm trigger --subsystem-match=input
   sudo udevadm trigger --sysname-match=uinput 2>/dev/null || true
   log "udev rule active — a reboot is the fallback if /dev/uinput is still root-only"
+
+  # Also covers `./install.sh rules` run without the deps phase.
+  disable_packaged_kanata_service
 }
 
 case "${1:-all}" in

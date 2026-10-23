@@ -205,6 +205,94 @@ Everything copied is in the history, **passwords included**. Delete sensitive
 items in the CopyQ window (select + Delete); clearing all:
 `copyq eval 'for (var i=count()-1;i>=0;--i) remove(i)'`.
 
+## Switching back to GNOME safely
+
+GNOME stays the fallback session.  Most of what this setup changes is
+session-scoped, but there are two cross-session traps:
+
+- **`KillUserProcesses=false`** is set by logind here.  A river child is not
+  guaranteed to die when the session ends.  In particular, a surviving
+  `kanata` or `gestures.py` keeps an evdev/uinput grab and can make GDM or
+  GNOME's keyboard/touchpad unusable.  `init` launches `session-cleanup.sh`
+  twice: once through `systemd-run --user` (in `user@1000.service`,
+  **outside** `session-*.scope`) and once as a session-scope copy.  The
+  session copy is important because logind *abandons* the session scope when
+  `KillUserProcesses=false`; it survives a user-manager stop that would take
+  the `systemd-run` copy with it.  Running both is idempotent.  When river
+  exits either copy stops the gesture loop, kanata, waybar, swaybg, dunst,
+  rivertile and a detached CopyQ, then stops the `xdg-desktop-portal*` user
+  services.  That releases the input grabs and lets GNOME activate its own
+  portal backend.
+- **The packaged `kanata.service` is system-wide.**  It expects
+  `/etc/kanata/config.kbd` and the `_kanata` user; it must stay disabled.
+  `install.sh` now disables and resets it automatically.  Only the
+  per-session instance started by river's `init` should run.
+
+The preceding `init` had a real bug here: `$PPID` points at a short-lived
+`sh -c` wrapper, not river, and that wrapper can be a zombie.  A zombie still
+answers `kill(pid, 0)`, so the old gesture/kanata watchers never fired.  The
+compositor PID is now resolved by walking to the real `river` process, and
+`gestures.py` treats a zombie parent as gone.
+
+Shared user state is intentionally persistent: GNOME color-scheme, power
+profile, Wi-Fi/Bluetooth radio state, saved network/Bluetooth profiles and
+CopyQ history.  These are not failures, but GNOME may start in the state you
+last selected in river; change them in GNOME if you want the previous state.
+
+Use GDM's **Log Out** (or `Super+Shift+E` in river), not **Switch User**, when
+going back to GNOME.  The cleanup runs when river exits; an evdev grab is
+global, so a river session left logged in on another VT can still affect the
+new session.
+
+### Verify the handoff
+
+Run this in a GNOME terminal after logging in:
+
+```sh
+echo "desktop=$XDG_CURRENT_DESKTOP session=$XDG_SESSION_TYPE display=$WAYLAND_DISPLAY"
+systemctl --user show-environment | grep -E '^(XDG_CURRENT_DESKTOP|XDG_SESSION_TYPE|WAYLAND_DISPLAY)='
+pgrep -a -x kanata || true
+pgrep -af '[g]estures.py' || true
+pgrep -a -x copyq || true
+pgrep -a -x CopyQ || true
+pgrep -a -x waybar || true
+pgrep -a -x swaybg || true
+pgrep -a -x rivertile || true
+pgrep -a -x dunst || true
+systemctl --user list-units 'xdg-desktop-portal*' --all --no-pager
+systemctl is-enabled kanata.service
+systemctl is-active kanata.service
+```
+
+Expected: `XDG_CURRENT_DESKTOP` contains `GNOME`, the user-manager environment
+shows the same GNOME values (not `river-classic`), the `pgrep` commands produce
+no river processes, `kanata.service` is `disabled`/`inactive`, and the portal
+chain is active for GNOME (`xdg-desktop-portal-gnome.service` may stay
+inactive until the first portal request; `-wlr` must not be serving GNOME).
+Then test the things a stale river session would break: GDM/GNOME login,
+keyboard and touchpad, a file chooser, screenshot/screen sharing, clipboard,
+audio, notifications, lock and suspend.
+
+If `systemctl --user show-environment` still says `river-classic`, import the
+GNOME values from the GNOME terminal and restart the portal chain:
+
+```sh
+systemctl --user import-environment XDG_CURRENT_DESKTOP XDG_SESSION_TYPE WAYLAND_DISPLAY
+systemctl --user stop xdg-desktop-portal.service xdg-desktop-portal-gtk.service \
+  xdg-desktop-portal-wlr.service xdg-desktop-portal-gnome.service
+```
+
+The next portal request starts the correct backend.  If a river process is
+still present, the cleanup watcher did not run; make sure
+`~/.config/river/session-cleanup.sh` is executable and that the next river
+login logs `compositor exited; cleaning river-classic processes` in
+`~/.local/state/river-classic/session-cleanup.log`.  A one-time system-unit
+cleanup still needs sudo:
+
+```sh
+sudo systemctl reset-failed kanata.service
+```
+
 ---
 
 ## Gotchas worth knowing (all hit during the build)

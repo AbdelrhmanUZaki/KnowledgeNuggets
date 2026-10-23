@@ -6,9 +6,35 @@
 # GDM does NOT source ~/.profile — make our ~/.local/bin tools visible!
 export PATH="$HOME/.local/bin:$PATH"
 
-# river runs this file through `sh -c`; the shell's parent is the compositor.
-# gestures.py uses it to stop (and release the touchpad grab) when river exits.
-RIVER_PID=$PPID
+# Find the actual compositor. river launches init through a short-lived
+# `sh -c` helper, so $PPID is normally that shell (and it can already be a
+# zombie), not river. Walk up one level when needed, verify the process name,
+# and fall back to the newest `river` process. The gesture daemon, the kanata
+# watcher and the cross-session cleanup all depend on this being correct.
+resolve_river_pid() {
+    pid=$PPID
+    if [ -r "/proc/$pid/comm" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" != "river" ]; then
+        parent=$(awk '/^PPid:/ { print $2 }' "/proc/$pid/status" 2>/dev/null)
+        [ -n "$parent" ] && [ "$parent" -gt 1 ] && pid=$parent
+    fi
+    if [ -r "/proc/$pid/comm" ] && [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = "river" ]; then
+        printf '%s\n' "$pid"
+        return 0
+    fi
+    pgrep -n -x river 2>/dev/null || true
+}
+
+river_alive() {
+    [ -n "${RIVER_PID:-}" ] || return 1
+    [ -r "/proc/$RIVER_PID/stat" ] || return 1
+    state=$(awk '{ print $3 }' "/proc/$RIVER_PID/stat" 2>/dev/null)
+    [ "$state" != "Z" ] && [ "$state" != "X" ]
+}
+
+RIVER_PID=$(resolve_river_pid)
+if [ -z "$RIVER_PID" ]; then
+    echo "river-classic: could not resolve river PID; parent watchers disabled" >&2
+fi
 
 # publish session env to dbus + user systemd, so dbus-activated services (portals!)
 # don't die of activation timeouts under non-GNOME compositors (GNOME does this for
@@ -114,6 +140,31 @@ BAR_LOG="$STATE_DIR/waybar.log"
 printf '1\n' > "$STATE_DIR/tags-current"
 rm -f "$STATE_DIR/tags-last"
 
+# ---- cross-session cleanup ---------------------------------------------------
+# logind has KillUserProcesses=false on this machine: a river child is not
+# guaranteed to die with the session. Run the cleanup from the user manager
+# (systemd-run --user), outside session-*.scope, so it can stop kanata, the
+# gesture grab, CopyQ, the bar/wallpaper/notification daemons and the user
+# portals after river exits. Stopping the portals is what lets the next GNOME
+# login activate its own backend instead of reusing river's GTK/WLR one.
+CLEANUP="$HOME/.config/river/session-cleanup.sh"
+if [ -n "$RIVER_PID" ] && [ -x "$CLEANUP" ]; then
+    if command -v systemd-run >/dev/null 2>&1; then
+        systemd-run --user \
+            --unit="river-classic-cleanup-$RIVER_PID" \
+            --description="river-classic session cleanup" \
+            --collect \
+            --setenv=HOME="$HOME" \
+            --setenv=PATH="$PATH" \
+            "$CLEANUP" "$RIVER_PID" >>"$STATE_DIR/cleanup.log" 2>&1 || true
+    fi
+    # Always keep a session-scope copy too.  With KillUserProcesses=false the
+    # session scope is abandoned instead of killed; this copy survives a user
+    # manager stop that would take the systemd-run copy with it.  Running the
+    # cleanup twice is idempotent (and releases the grabs either way).
+    ( "$CLEANUP" "$RIVER_PID" >>"$STATE_DIR/cleanup.log" 2>&1 & )
+fi
+
 # ---- keyboard remapper (kanata): space-hold = arrows, caps-hold = scroll -------
 # Config: 2-setup/linux/kanata.kbd, linked to ~/.config/kanata/kanata.kbd by
 # restore.sh. kanata reads the keyboard directly, so the udev keyboard rule must
@@ -123,8 +174,10 @@ if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]
     if ! pgrep -x kanata >/dev/null 2>&1; then
         kanata --cfg "$HOME/.config/kanata/kanata.kbd" >>"$STATE_DIR/kanata.log" 2>&1 &
         KANATA_PID=$!
-        # kanata has no --parent: stop it when river exits (children are reparented)
-        ( while kill -0 "$RIVER_PID" 2>/dev/null; do sleep 2; done
+        # kanata has no --parent: stop it (and any wrapper child) when river
+        # exits. `river_alive` treats a zombie river as gone.
+        ( while river_alive; do sleep 2; done
+          pkill -P "$KANATA_PID" 2>/dev/null || true
           kill "$KANATA_PID" 2>/dev/null ) >/dev/null 2>&1 &
     fi
 fi
@@ -200,9 +253,10 @@ riverctl input '*Touchpad' scroll-factor 0.3
 # released by the kernel, so stock clickfinger behaviour always comes back.
 # Needs udev/70-river-classic-input.rules (see README) or it exits with code 3.
 GESTURES_LOG="$STATE_DIR/gestures.log"
-( while :; do
+( while river_alive; do
       "$HOME/.config/river/gestures.py" --parent "$RIVER_PID"
       rc=$?
+      river_alive || break
       if [ "$rc" -eq 3 ]; then
           exit 0                       # missing permission/uinput -> no point looping
       elif [ "$rc" -eq 4 ]; then
