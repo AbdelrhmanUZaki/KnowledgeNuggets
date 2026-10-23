@@ -284,6 +284,24 @@ text VT (`Ctrl+Alt+F3`), log in, and run
 `~/.config/river/unlock-session.sh`. It sends `unlock_and_destroy` through a new
 lock client; it only works while river believes the session is locked.
 
+**After a logout/login river may start with only the background and the
+cursor.** That is the portal-chain failure mode: `waybar.log` shows
+`Error calling StartServiceByName for org.freedesktop.portal.Desktop:
+Timeout was reached`, while the user-manager journal shows only
+`Starting xdg-desktop-portal.service`.  A fast logout can leave
+`xdg-desktop-portal-gtk` in a `cannot open display:` *failed* state, and dbus
+activation then refuses it, so the new session's first portal call times out.
+`init` now restarts the portal units right after publishing the session
+environment, so a fresh river login self-heals instead of needing a reboot.
+By hand it is exactly:
+
+```sh
+for p in xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr; do
+    systemctl --user restart "$p.service"
+done
+killall -USR2 waybar 2>/dev/null || true
+```
+
 ## Switching back to GNOME safely
 
 GNOME stays the fallback session.  Most of what this setup changes is

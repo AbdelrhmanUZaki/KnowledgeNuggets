@@ -41,6 +41,25 @@ fi
 # you; river-classic doesn't!)
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
 
+# A fast river logout leaves the user-manager's portal chain half-dead:
+# xdg-desktop-portal-gtk can be restarted by dbus *while* river is already
+# exiting (`cannot open display:`); the unit ends up in a `failed` state and
+# codeporter dbus activation then refuses it, so the *next* river session's
+# first portal call (waybar's Settings) times out at 25 s and river shows
+# nothing but the background + cursor. Restart the chain now that the fresh
+# env is published; idempotent, and session-cleanup.sh still stops the units
+# on river exit so GNOME never inherits river's portal choice. (Found live on
+# the Oct 23 relogin: river started with no bar; journal showed only
+# `Starting xdg-desktop-portal.service` and waybar's 25 s StartServiceByName
+# timeouts, while the *working* session had the same call with -gtk activated
+# right behind it.)
+if command -v systemctl >/dev/null 2>&1; then
+    for p in xdg-desktop-portal.service xdg-desktop-portal-gtk.service \
+             xdg-desktop-portal-wlr.service; do
+        systemctl --user restart "$p" 2>/dev/null || true
+    done
+fi
+
 # ---- keyboard ------------------------------------------------------------------
 # Port of the old X11 setup (setxkbmap in .xinitrc/.xprofile): US + Arabic,
 # Win+Space switches groups, Caps = Escape, Menu = Win. River otherwise runs a
