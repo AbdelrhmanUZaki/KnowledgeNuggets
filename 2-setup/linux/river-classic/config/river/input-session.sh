@@ -45,6 +45,7 @@ KANATA_GAVE_UP="$STATE_DIR/input-kanata-gave-up"
 GESTURES_GAVE_UP="$STATE_DIR/input-gestures-gave-up"
 KANATA_PIDFILE="$STATE_DIR/input-kanata.pid"
 SUPERVISOR_PIDFILE="$STATE_DIR/input-supervisor.pid"
+WATCH_PIDFILE="$STATE_DIR/input-watcher.pid"
 LOCK="$STATE_DIR/input-session.lock"
 
 KANATA_CFG="$HOME/.config/kanata/kanata.kbd"
@@ -153,6 +154,47 @@ gestures_loop() {
     ) >>"$LOG" 2>&1 9>&- &
 }
 
+# ------------------------------------------------------------------ watcher --
+# The one thing the unlock-command cannot do: river coming back active without
+# a gtklock in the way (GDM's re-auth path unlocks the keyring and drops the
+# user straight back into the session — no gtklock is running, so its
+# `[main] unlock-command` never fires).  The watcher therefore keeps session
+# activity and "is input released?" in sync on BOTH directions:
+#
+#   session becomes inactive  ->  pause (release grabs, so the greeter / the
+#                                 session that took the seat gets input)
+#   session becomes active    ->  resume (re-spawn what is missing)
+#
+# Polling (1 s) instead of watching for a D-Bus signal: this only matters when
+# a VT switch happens, and a 1 s delay is quieter than keeping a systemd
+# subscription alive in a script that also has to survive river exits.
+watch_loop() {
+    (
+        sid="${XDG_SESSION_ID:-}"
+        if [ -z "$sid" ]; then
+            log "watch: no XDG_SESSION_ID in this environment; can't poll logind"
+            exit 1
+        fi
+        while river_alive; do
+            active=$(loginctl show-session "$sid" -p Active --value 2>/dev/null || true)
+            case "$active" in
+                yes)
+                    if [ -e "$PAUSE_FLAG" ]; then
+                        log "watch: session is active again; resuming grabs"
+                        do_resume
+                    fi ;;
+                no)
+                    if [ ! -e "$PAUSE_FLAG" ]; then
+                        log "watch: session went inactive; pausing grabs"
+                        do_pause
+                    fi ;;
+            esac
+            sleep 1
+        done
+        log "river exited; watcher stopped"
+    ) >>"$LOG" 2>&1 9>&- &
+}
+
 # ------------------------------------------------------------------- verbs --
 
 do_start() {
@@ -171,8 +213,13 @@ do_start() {
         # Fresh state: no pause flag, no gave-up markers.  Old orphan files
         # from any previous session of this user are stale and go away.
         rm -f "$PAUSE_FLAG" "$KANATA_GAVE_UP" "$GESTURES_GAVE_UP" \
-              "$KANATA_PIDFILE" "$SUPERVISOR_PIDFILE"
-            gestures_loop
+              "$KANATA_PIDFILE" "$SUPERVISOR_PIDFILE" "$WATCH_PIDFILE"
+        # The session watcher is what keeps pause/resume in sync with the
+        # seat after a Switch User round trip (and after GDM's re-auth path,
+        # which does NOT run gtklock's unlock-command).
+        watch_loop
+        echo "$!" >"$WATCH_PIDFILE"
+        gestures_loop
         echo "$!" >"$SUPERVISOR_PIDFILE"
         log "started gesture supervisor (pid $!, river $river_pid_arg)"
     ) 9>>"$LOCK"
@@ -246,6 +293,12 @@ do_status() {
         printf 'gestures supervisor running (pid %s)\n' "$s"
     else
         echo 'gestures supervisor stopped'
+    fi
+    w=$(pid_of_file "$WATCH_PIDFILE" 2>/dev/null)
+    if [ -n "$w" ]; then
+        printf 'session watcher    running (pid %s)\n' "$w"
+    else
+        echo 'session watcher    stopped'
     fi
     if k=$(pid_of_file "$KANATA_PIDFILE" 2>/dev/null) && pgrep -x kanata >/dev/null 2>&1; then
         printf 'kanata             running (pid %s)\n' "$k"

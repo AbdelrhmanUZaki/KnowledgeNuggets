@@ -140,10 +140,11 @@ work; use `neru status` to see the active mode.
 - **Switch user** is the non-destructive logout-free path (nothing in-app is
   closed): the lock screen's power bar button calls
   `config/river/switch-user.sh`, which releases the keyboard (kanata) and
-  touchpad (gestures.py) grabs, then asks GDM for a fresh greeter. When you
-  return and unlock, `input-session.sh` brings both grabbers back. The
-  keyboard remap is off while it is away, so the password form takes the
-  plain `us` keyboard.
+  touchpad (gestures.py) grabs, then asks GDM for a fresh greeter. Returning
+  to the session — via the lock screen's unlock *or* GDM's own re-auth —
+  brings both grabbers back automatically (`input-session.sh` watches
+  logind's Active state). The keyboard remap is off while it is away, so the
+  password form takes the plain `us` keyboard.
 - `input-session.sh status` shows whether the grabbers are running or paused.
 - If a locker ever leaves the screen black or solid and you cannot unlock,
   switch to a text VT (`Ctrl+Alt+F3`), log in, and run:

@@ -256,11 +256,14 @@ at a lock surface.
   `input-session.sh pause` to release the keyboard (kanata) and touchpad
   (gestures.py) grabs, *then* asks GDM for a fresh greeter
   (`org.gnome.DisplayManager.LocalDisplayFactory.CreateTransientDisplay`).
-- When the user returns to this session, river shows the same gtklock form;
-  *unlocking* triggers `[main] unlock-command` → `input-session.sh resume`,
-  which re-spawns only what is actually missing (and is a no-op after an
-  ordinary lock→unlock cycle that never touched the grabs).
-- If the GDM call fails, the session's own input grabs are restored
+- Input is released either way the session leaves the seat: the lock screen's
+  button pauses explicitly, and a `session watcher` inside
+  `input-session.sh` pauses whenever logind reports the session inactive
+  (so a VT switch or greeter that arrives by *another* route gets the input
+  too). When the session becomes active again, that watcher resumes the
+  grabs — regardless of *which* way it came back, including GDM's re-auth
+  path into this same session, which never runs gtklock's `unlock-command`.
+- If the GDM call fails, the session's input grabs are restored
   immediately, so a failed switch never leaves the seat unusable.
 
 Two other details worth noting: the kanata keymap is off while the grabs are

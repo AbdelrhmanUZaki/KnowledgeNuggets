@@ -115,7 +115,8 @@ pkill -9 -f "$HOME/.config/river/input-session.sh" 2>/dev/null || true
 # this user gets a clean managed-supervisor state instead of inheriting ours.
 rm -f "$STATE_DIR/input-paused" "$STATE_DIR/input-kanata-gave-up" \
       "$STATE_DIR/input-gestures-gave-up" "$STATE_DIR/input-kanata.pid" \
-      "$STATE_DIR/input-supervisor.pid" "$STATE_DIR/input-session.lock"
+      "$STATE_DIR/input-supervisor.pid" "$STATE_DIR/input-watcher.pid" \
+      "$STATE_DIR/input-session.lock"
 for name in kanata waybar swaybg dunst rivertile swaylock gtklock; do
     pkill -9 -x "$name" 2>/dev/null || true
 done
