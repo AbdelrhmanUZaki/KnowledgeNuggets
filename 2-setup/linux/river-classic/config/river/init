@@ -75,6 +75,8 @@ riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 # ---- help / lock --------------------------------------------------------------
 # Every lock entry point calls the same wrapper: swaylock needs a tty, and the
 # old bare `swaylock -f` paths left a solid screen with no password input.
+# Super+L = GNOME muscle memory (Super+Escape is kept as the dwm-style alias).
+riverctl map normal Super L spawn "$HOME/.config/river/lock-session.sh"
 riverctl map normal Super Escape spawn "$HOME/.config/river/lock-session.sh"
 # Full keybinding cheat sheet: Super+F1 or Super+? (Super+Shift+Slash).
 riverctl map normal Super F1 spawn "$HOME/.config/river/show-shortcuts.sh"
@@ -92,8 +94,10 @@ riverctl map normal Super+Shift K swap previous
 riverctl map normal Super Return zoom                # dwm Mod+Return = zoom
 
 # master/stack sizing, exactly like dwm
-riverctl map normal Super H send-layout-cmd rivertile "main-ratio -0.05"
-riverctl map normal Super L send-layout-cmd rivertile "main-ratio +0.05"
+# master ratio lives on Super+Ctrl+H/L now: bare Super+L is the lock key
+# (GNOME muscle memory), and bare Super+H would have been left without its pair.
+riverctl map normal Super+Control H send-layout-cmd rivertile "main-ratio -0.05"
+riverctl map normal Super+Control L send-layout-cmd rivertile "main-ratio +0.05"
 riverctl map normal Super+Shift H send-layout-cmd rivertile "main-count -1"
 riverctl map normal Super+Shift L send-layout-cmd rivertile "main-count +1"
 

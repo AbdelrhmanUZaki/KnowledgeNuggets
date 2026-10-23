@@ -23,7 +23,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Super+J` / `Super+K` | focus next / previous window |
 | `Super+Shift+J` / `Super+Shift+K` | swap focused window next / previous |
 | `Super+Return` | zoom (promote focused window to master) |
-| `Super+H` / `Super+L` | shrink / grow the master area |
+| `Super+Ctrl+H` / `Super+Ctrl+L` | shrink / grow the master area (`Super+L` is the lock key) |
 | `Super+Shift+H` / `Super+Shift+L` | fewer / more master windows |
 | `Super+Up` / `Super+Right` / `Super+Down` / `Super+Left` | move the master area (top / right / bottom / left) |
 | `Super+Alt+Shift+H` / `L` | resize window horizontally (− / + 100 px) |
@@ -46,7 +46,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |
-| `Super+Escape` | lock the session |
+| `Super+L` / `Super+Escape` | lock the session |
 | `Super+Shift+E` | log out of river (returns to GDM) |
 | `Alt+B` | show / hide the bar |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic) |

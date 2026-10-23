@@ -142,7 +142,7 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | Keys | Action |
 |---|---|
 | `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
-| `Super+Escape` | lock the session (power bar also has Switch user / power / reboot) |
+| `Super+L` / `Super+Escape` | lock the session (power bar also has Switch user / power / reboot) |
 | `Alt+1..9` | switch to tag · `Alt+0` = all tags |
 | `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
@@ -154,7 +154,7 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` | toggle floating |
 | `Super+F` | toggle fullscreen |
-| `Super+Return` | zoom / `Super+H` `Super+L` master ratio · `Super+Shift+H/L` master count |
+| `Super+Return` | zoom / `Super+Ctrl+H/L` master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
 | `Alt+B` | show/hide the bar (waybar's SIGUSR1 toggle) |
