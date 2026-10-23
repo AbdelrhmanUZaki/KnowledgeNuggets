@@ -24,17 +24,25 @@ die()  { printf '\033[1;31m[river]\033[0m %s\n' "$*" >&2; exit 1; }
 
 APT_PACKAGES=(
   # session + bar
-  waybar foot fuzzel dunst swaylock
+  waybar foot fuzzel dunst swaylock swaybg
+  # user feedback + Alt+B bar toggle (killall -USR1 waybar)
+  libnotify-bin psmisc
   # screen capture (wl-copy for screenshots); CopyQ is the 17.x AppImage,
   # installed by install-copyq17.sh — the distro's 13.0.0 crashes on Wayland
   grim slurp wl-clipboard
+  # CopyQ AppImage: download + FUSE mount
+  curl fuse3
   # system panel / desktop integration
   pavucontrol network-manager-gnome blueman
   gnome-calendar gnome-control-center
-  pipewire-utils                 # wpctl — the audio CLI (this is PipeWire, not PulseAudio)
+  power-profiles-daemon         # powerprofilesctl — the panel's Power tile
+  pipewire wireplumber pipewire-pulse  # wpctl + PulseAudio compatibility for apps/bar
   python3-gi gir1.2-gtk-3.0      # the GTK3 system panel (PyGObject)
   libgtk-layer-shell0            # wlr-layer-shell — docks the panel under the bar
   fonts-font-awesome             # monochrome icon font used by the bar and the panel
+  fonts-ubuntu fonts-noto-core   # bar + notification fonts
+  upower                         # waybar battery {power}/{time} via libupower-glib
+  xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-wlr
   kanata                         # keyboard remap: space-hold arrows / caps-hold scroll
 )
 

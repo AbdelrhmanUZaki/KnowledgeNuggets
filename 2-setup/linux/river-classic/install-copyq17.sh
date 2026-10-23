@@ -23,11 +23,16 @@ mkdir -p "$(dirname "$APPIMAGE")" "$(dirname "$WRAPPER")"
 if [ -x "$APPIMAGE" ] && "$APPIMAGE" --version 2>/dev/null | grep -q "CopyQ Clipboard Manager $VERSION"; then
     log "CopyQ $VERSION already installed"
 else
-    command -v curl >/dev/null 2>&1 || die "curl is required to download CopyQ"
     log "downloading CopyQ $VERSION (44 MB)…"
     tmp="$APPIMAGE.tmp"
     trap 'rm -f "$tmp"' EXIT HUP INT TERM
-    curl -fL --progress-bar -o "$tmp" "$URL"
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL --progress-bar -o "$tmp" "$URL"
+    elif command -v wget >/dev/null 2>&1; then
+        wget -q -O "$tmp" "$URL"
+    else
+        die "curl or wget is required to download CopyQ"
+    fi
     echo "$SHA512  $tmp" | sha512sum -c - >/dev/null || die "checksum mismatch for $tmp"
     mv "$tmp" "$APPIMAGE"
     chmod +x "$APPIMAGE"

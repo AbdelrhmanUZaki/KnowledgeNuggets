@@ -36,6 +36,13 @@ link "$HERE/config/waybar" "$HOME/.config/waybar"
 link "$HERE/config/foot" "$HOME/.config/foot"
 link "$HERE/config/dunst" "$HOME/.config/dunst"
 
+# shared kanata config (the same file the other Linux machines use)
+if command -v kanata >/dev/null 2>&1 && [ -f "$HERE/../kanata.kbd" ]; then
+  link "$HERE/../kanata.kbd" "$HOME/.config/kanata/kanata.kbd"
+else
+  echo "note   kanata not installed or ../kanata.kbd missing; skipping keyboard remap config"
+fi
+
 # wallpaper: keep a copy in a stable location (the init looks there first)
 mkdir -p "$HOME/.local/share/wallpapers"
 if [ ! -f "$HOME/.local/share/wallpapers/river-classic.jpg" ]; then

@@ -25,16 +25,23 @@ Then **log out** of GNOME and pick **river-classic** in the gear menu.
 
 Phases can be run separately: `./install.sh deps | copyq | build | session | rules | config`.
 
+`deps` installs the runtime packages used by the keybinds and panel (bar,
+terminal, launcher, notifications, wallpaper, screen capture, portals, fonts,
+power profiles, audio) plus the build toolchain.
+
 `./install.sh copyq` downloads the CopyQ 17.0.0 AppImage (44 MB, SHA-512
 pinned) to `~/.local/opt` and creates `~/.local/bin/copyq`. It is deliberately
 not the APT package: Ubuntu 26.04 ships 13.0.0, which crashes when restoring
 large images under Qt 6.10/Wayland.
 
-Re-apply the config at any time (this is what `2-setup/linux/restore.sh` calls):
+Re-apply the river config at any time:
 
 ```bash
-./restore.sh          # symlinks ~/.config/{river,waybar} -> this repo, with backups
+./restore.sh          # links ~/.config/{river,waybar,foot,dunst}; links ../kanata.kbd; copies the wallpaper
 ```
+
+This is separate from `2-setup/linux/restore.sh`, which restores the shared
+shell, git, tmux and editor configs.
 
 Because the config is symlinked, **edits in this repo are live immediately** — change
 `config/waybar/style.css`, save, and the bar reloads it (`reload_style_on_change`).
@@ -132,10 +139,14 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 | `Alt+1..9` | switch to tag · `Alt+0` = all tags |
 | `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
+| `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
 | `Alt+T` | terminal (foot) |
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+P` | launcher (fuzzel) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
+| `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
+| `Super+Shift+Space` | toggle floating |
+| `Super+F` | toggle fullscreen |
 | `Super+Return` | zoom / `Super+H` `Super+L` master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
