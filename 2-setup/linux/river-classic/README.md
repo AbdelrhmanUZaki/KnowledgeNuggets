@@ -90,7 +90,7 @@ and `memory` modules do the rest.
 
 | File | Role |
 |---|---|
-| `config/river/init` | session bootstrap: paths, dbus env, keybinds, bar/dunst/swaybg, rivertile |
+| `config/river/init` | session bootstrap: paths, dbus env, keybinds, kanata autostart, bar/dunst/swaybg, rivertile |
 | `config/foot/foot.ini` | terminal font size (14 pt default; `ctrl+=` / `ctrl+-` zoom live) |
 | `config/dunst/dunstrc` | notifications — Noto Sans 14, white cards, gold 3px frame (ported from the dwm setup) |
 | `config/river/system-panel.py` | the System Menu (GTK3, PyGObject) — tiles, live sliders, session row; **fully async** (no blocking shell calls) |
@@ -136,6 +136,16 @@ Tags are on **Alt** (dwm muscle memory), not Super.
 > Browser caveat: Firefox/Chromium also use `Alt+<number>` for tab switching — the
 > compositor wins the race.
 
+### Keyboard remap (kanata)
+
+`space` held = arrows (`h/j/k/l`), `space` tapped = a normal space. `caps` tapped =
+Esc; `caps` held = vim scroll (`j/k` scroll, `d/e` page, `c/s` fast, `g` top,
+double-tap `g` bottom). The config is `../kanata.kbd` (shared with the other Linux
+machines), linked to `~/.config/kanata/kanata.kbd`; `init` starts kanata when it
+is installed. It reads the keyboard directly, so the keyboard half of the udev
+rule is required (`sudo ./install.sh rules`). Emergency exit: hold
+`lctl`+`spc`+`esc`.
+
 ---
 
 ## Gotchas worth knowing (all hit during the build)
@@ -168,7 +178,10 @@ Tags are on **Alt** (dwm muscle memory), not Super.
   translated left/right button.
 - **`/dev/uinput` is not covered by logind's uaccess ACL** (it is `misc`, not
   `input`). The gesture daemon needs the udev rule in `udev/`; without it it exits
-  cleanly after logging the fix, leaving the stock touchpad untouched.
+  cleanly after logging the fix, leaving the stock touchpad untouched. Stock
+  Ubuntu's `70-uaccess.rules` also tags only joysticks, so keyboards stay
+  `root:input` — the same rule grants `plugdev` read access to
+  `ID_INPUT_KEYBOARD` event nodes for **kanata** (space/caps layers).
 - **A grabbed evdev fd is released by the kernel when the process dies.** That is
   why `gestures.py` can never leave a dead touchpad: worst case river goes back to
   the physical pad with stock clickfinger.
@@ -228,7 +241,8 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   batched into one `brightness.sh bump` / `wpctl` call per frame.
   One documented side effect: libinput still emits its own **middle click on a
   3-finger tap** (plus the back action); 1/2-finger taps are untouched.
-  Install the udev rule once (the daemon is already spawned by `init`):
+  Install the udev rule once (it covers the gesture daemon **and** kanata; both
+  are spawned by `init`):
   ```sh
   sudo install -m 0644 udev/70-river-classic-input.rules /etc/udev/rules.d/
   echo uinput | sudo tee /etc/modules-load.d/river-classic-uinput.conf

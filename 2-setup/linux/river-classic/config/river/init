@@ -112,6 +112,21 @@ BAR_LOG="$STATE_DIR/waybar.log"
 printf '1\n' > "$STATE_DIR/tags-current"
 rm -f "$STATE_DIR/tags-last"
 
+# ---- keyboard remapper (kanata): space-hold = arrows, caps-hold = scroll -------
+# Config: 2-setup/linux/kanata.kbd, linked to ~/.config/kanata/kanata.kbd by
+# restore.sh. kanata reads the keyboard directly, so the udev keyboard rule must
+# be installed (udev/70-river-classic-input.rules). Without it kanata exits and
+# kanata.log says why — the rest of the session keeps working.
+if command -v kanata >/dev/null 2>&1 && [ -f "$HOME/.config/kanata/kanata.kbd" ]; then
+    if ! pgrep -x kanata >/dev/null 2>&1; then
+        kanata --cfg "$HOME/.config/kanata/kanata.kbd" >>"$STATE_DIR/kanata.log" 2>&1 &
+        KANATA_PID=$!
+        # kanata has no --parent: stop it when river exits (children are reparented)
+        ( while kill -0 "$RIVER_PID" 2>/dev/null; do sleep 2; done
+          kill "$KANATA_PID" 2>/dev/null ) >/dev/null 2>&1 &
+    fi
+fi
+
 # status bar — up to 3 tries, and every attempt must actually ATTACH to an output
 # (a bar that starts while the outputs are still coming up stays invisible)
 ( for i in 1 2 3 ; do

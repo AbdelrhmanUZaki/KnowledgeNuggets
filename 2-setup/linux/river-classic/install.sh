@@ -34,6 +34,7 @@ APT_PACKAGES=(
   python3-gi gir1.2-gtk-3.0      # the GTK3 system panel (PyGObject)
   libgtk-layer-shell0            # wlr-layer-shell — docks the panel under the bar
   fonts-font-awesome             # monochrome icon font used by the bar and the panel
+  kanata                         # keyboard remap: space-hold arrows / caps-hold scroll
 )
 
 BUILD_PACKAGES=(
@@ -148,7 +149,7 @@ install_rules() {
   local rule="$HERE/udev/70-river-classic-input.rules"
   [ -f "$rule" ] || { warn "missing $rule"; return; }
 
-  log "installing touchpad gesture udev rule (sudo)"
+  log "installing input udev rules (gestures + kanata)"
   sudo install -m 0644 "$rule" /etc/udev/rules.d/70-river-classic-input.rules
   echo uinput | sudo tee /etc/modules-load.d/river-classic-uinput.conf >/dev/null
   sudo modprobe uinput 2>/dev/null || true

@@ -90,6 +90,14 @@ Restart=on-failure
 WantedBy=default.target
 ```
 
+> **river-classic on this laptop:** no user unit is needed — `config/river/init`
+> starts kanata itself once it is installed, and
+> `river-classic/udev/70-river-classic-input.rules` already grants the session
+> user read access to the keyboard event nodes. Install it with
+> `sudo ~/Github/KnowledgeNuggets/2-setup/linux/river-classic/install.sh rules`
+> (no `usermod input` / relogin), then log out and back in. Emergency exit:
+> hold `lctl`+`spc`+`esc`.
+
 If skipping kanata, set Caps → Esc via GNOME settings (see section 5).
 
 ### KDE window tiling (Krohnkite)

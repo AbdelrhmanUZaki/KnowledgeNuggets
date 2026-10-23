@@ -1,7 +1,8 @@
 ;; kanata config (Linux) -- port of the macOS karabiner scroll/nav rules
 ;; from the `main` branch: vim_scrolling.json + space nav.
 ;; Install:  sudo apt install kanata  (or from GitHub releases)
-;; Autostart: see Linux Setup.md (systemd user service or .xprofile)
+;; Autostart: river-classic session init (this laptop); systemd user service or
+;;            .xprofile elsewhere -- see Linux Setup.md
 ;; Manual run:  kanata -c ~/.config/kanata/kanata.kbd
 ;;
 ;; Layout:

@@ -1,9 +1,14 @@
-# river-classic: multi-finger touchpad gestures
+# river-classic: multi-finger touchpad gestures + kanata keyboard remap
 #
 # config/river/gestures.py needs to
 #   1. read the raw touchpad event node (tap/swipe detection, EVIOCGRAB)
 #   2. write /dev/uinput (it mirrors the pad as a non-clickpad touchpad and
 #      injects back/forward buttons)
+#
+# kanata (2-setup/linux/kanata.kbd) needs to read the keyboard event nodes to
+# implement space-hold = arrows / caps-hold = scroll. Stock Ubuntu only tags
+# joysticks with uaccess (70-uaccess.rules); keyboards stay root:input, so the
+# session user cannot open them.
 #
 # The session user is in "plugdev", so grant that group access.  logind's
 # uaccess ACL only covers the active seat and is not applied to /dev/uinput.
@@ -20,6 +25,9 @@
 
 ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event[0-9]*", \
     ENV{ID_INPUT_TOUCHPAD}=="1", GROUP="plugdev", MODE="0660"
+
+ACTION=="add|change", SUBSYSTEM=="input", KERNEL=="event[0-9]*", \
+    ENV{ID_INPUT_KEYBOARD}=="1", GROUP="plugdev", MODE="0660"
 
 KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="plugdev", MODE="0660", \
     OPTIONS+="static_node=uinput"
