@@ -152,6 +152,10 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 
 ## Gotchas worth knowing (all hit during the build)
 
+- **`riverctl map … spawn` takes one command string, not argv.** `spawn
+  "/path/script arg"` works; `spawn "/path/script" arg` is accepted by `map` but
+  fails on every keypress with `error(command): spawn: too many arguments` in
+  river's log (the screenshot and clipboard binds both pass one quoted string).
 - **Audio is PipeWire, not PulseAudio.** `pactl` does not exist here; use `wpctl`
   (`wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.5`, `wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle`).
 - **Brightness must go through logind.** `brightnessctl` direct writes are denied

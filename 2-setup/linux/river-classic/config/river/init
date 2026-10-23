@@ -23,7 +23,7 @@ riverctl keyboard-layout -options grp:win_space_toggle,caps:escape,altwin:menu_w
 
 # ---- launcher / terminal -----------------------------------------------------
 riverctl map normal Super P spawn fuzzel
-riverctl map normal Super V spawn "$HOME/.config/river/clipboard.sh" pick   # clipboard history
+riverctl map normal Super V spawn "$HOME/.config/river/clipboard.sh pick"   # clipboard history
 riverctl map normal Super+Shift Return spawn foot
 
 # ---- dwm core binds ----------------------------------------------------------
