@@ -872,6 +872,10 @@ class Panel(Gtk.Window):
             # swaylock needs a tty to read the password from.  The wrapper runs
             # it through foot (or uses gtklock when installed), so locking from
             # the panel can never land on a solid screen with no password input.
+            # Switch user = GNOME's own non-destructive path: it releases
+            # river's kanata/gestures grabs, hands the seat to a fresh GDM
+            # greeter, and (on return) river shows the same lock surface.
+            ("\uf0a4", "Switch user", [HOME + "/.config/river/switch-user.sh"]),
             ("\uf023", "Lock", [HOME + "/.config/river/lock-session.sh"]),
             ("\uf08b", "Log out", ["%s/.local/bin/riverctl" % HOME, "exit"]),
             ("\uf021", "Reboot", ["systemctl", "reboot"]),

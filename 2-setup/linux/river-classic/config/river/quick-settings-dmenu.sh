@@ -28,6 +28,7 @@ pick=$(printf '%s\n' \
 "─── sessions ───" \
 "⚙  settings" \
 "🔒  lock" \
+"👤  switch user" \
 "⇥  logout" \
 "↺  reboot" \
 "☾  suspend" \
@@ -82,6 +83,10 @@ case "$pick" in
         ;;
     🔒*)
         "$HOME/.config/river/lock-session.sh"
+        exit 0
+        ;;
+    👤*)
+        "$HOME/.config/river/switch-user.sh"
         exit 0
         ;;
     ⇥*)
