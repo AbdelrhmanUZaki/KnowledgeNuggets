@@ -143,9 +143,9 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | Keys | Action |
 |---|---|
 | `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
-| `Super+L` / `Super+Escape` | lock the session (power bar also has Switch user / power / reboot) |
-| `Alt+1..9` | switch to tag · `Alt+0` = all tags |
-| `Alt+Shift+1..9` | **move the focused window to that tag** · `Alt+Shift+0` = on every tag |
+| `Super+Escape` / `Super+Alt+L` | lock the session (power bar also has Switch user / power / reboot) |
+| `Alt+1..9` or `Super+1..9` | switch to tag · `Alt+0`/`Super+0` = all tags |
+| `Alt+Shift+1..9` or `Super+Shift+1..9` | **move the focused window to that tag** · `Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
 | `Alt+T` | terminal (foot) |
@@ -155,7 +155,7 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` | toggle floating |
 | `Super+F` | toggle fullscreen |
-| `Super+Return` | zoom / `Super+Ctrl+H/L` master ratio · `Super+Shift+H/L` master count |
+| `Super+Return` | zoom / `Super+H/L` master ratio (`Ctrl+H/L` alias) · `Super+Shift+H/L` master count |
 | `Super+Q` | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
 | `Alt+B` | show/hide the bar (waybar's SIGUSR1 toggle) |
@@ -222,7 +222,7 @@ open apps. The lock screen itself is a separate protocol
 (`ext-session-lock-v1`) implemented by the locker.
 
 Every lock entry point — the panel button, `quick-settings-dmenu.sh`,
-`power-menu.sh`, `Super+L` and `Super+Escape` — calls the same wrapper,
+`power-menu.sh`, `Super+Escape` and `Super+Alt+L` — calls the same wrapper,
 `config/river/lock-session.sh`. It:
 
 - uses **gtklock** by default: a GTK/PAM form on the `ext-session-lock-v1`

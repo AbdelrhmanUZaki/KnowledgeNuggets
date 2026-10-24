@@ -86,9 +86,10 @@ riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 # ---- help / lock --------------------------------------------------------------
 # Every lock entry point calls the same wrapper: swaylock needs a tty, and the
 # old bare `swaylock -f` paths left a solid screen with no password input.
-# Super+L = GNOME muscle memory (Super+Escape is kept as the dwm-style alias).
-map_us normal Super L spawn "$HOME/.config/river/lock-session.sh"
+# Lock on Super+Escape (dwm-ish) and Super+Alt+L (does not steal Super+L,
+# which is dwm's master-ratio grow).
 riverctl map normal Super Escape spawn "$HOME/.config/river/lock-session.sh"
+riverctl map normal Super+Alt L spawn "$HOME/.config/river/lock-session.sh"
 # Full keybinding cheat sheet: Super+F1 or Super+? (Super+Shift+Slash).
 riverctl map normal Super F1 spawn "$HOME/.config/river/show-shortcuts.sh"
 map_us normal Super+Shift Slash spawn "$HOME/.config/river/show-shortcuts.sh"
@@ -105,8 +106,9 @@ map_us normal Super+Shift K swap previous
 riverctl map normal Super Return zoom                # dwm Mod+Return = zoom
 
 # master/stack sizing, exactly like dwm
-# master ratio lives on Super+Ctrl+H/L now: bare Super+L is the lock key
-# (GNOME muscle memory), and bare Super+H would have been left without its pair.
+# master ratio on bare H/L, exactly like dwm (Ctrl+H/L kept as aliases)
+map_us normal Super H send-layout-cmd rivertile "main-ratio -0.05"
+map_us normal Super L send-layout-cmd rivertile "main-ratio +0.05"
 map_us normal Super+Control H send-layout-cmd rivertile "main-ratio -0.05"
 map_us normal Super+Control L send-layout-cmd rivertile "main-ratio +0.05"
 map_us normal Super+Shift H send-layout-cmd rivertile "main-count -1"
@@ -136,6 +138,15 @@ all_tags=$(((1 << 32) - 1))
 riverctl map normal Alt 0 set-focused-tags 511
 riverctl map normal Alt+Shift 0 set-view-tags $all_tags
 riverctl map normal Alt Tab focus-previous-tags   # current <-> previous tag set (dwm view(0))
+# Same tag model on Super, for dwm configs whose MODKEY is Mod4.
+for i in $(seq 1 9)
+do
+    tags=$((1 << ($i - 1)))
+    riverctl map normal Super $i set-focused-tags $tags
+    riverctl map normal Super+Shift $i set-view-tags $tags
+done
+riverctl map normal Super 0 set-focused-tags 511
+riverctl map normal Super+Shift 0 set-view-tags $all_tags
 
 # ---- float / fullscreen / mouse ------------------------------------------------
 riverctl map normal Super+Shift Space toggle-float   # Win+Space = layout switch (see keyboard block)

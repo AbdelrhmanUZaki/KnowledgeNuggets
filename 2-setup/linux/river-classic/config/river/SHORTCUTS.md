@@ -16,15 +16,15 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Alt+1` … `Alt+9` | view tag 1–9 |
 | `Alt+0` | view all tags |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
-| `Alt+1` … `Alt+9`, `Alt+0` | instant (direct river binds, no spawned script) |
-| `Alt+Shift+1` … `Alt+Shift+9` | move the focused window to that tag |
+| `Alt+1…9` / `Super+1…9`, `Alt+0` / `Super+0` | view tag / all tags (instant river binds) |
+| `Alt+Shift+1…9` / `Super+Shift+1…9` | move the focused window to that tag |
 | `Alt+Shift+0` | put the focused window on every tag |
 | `Alt+Ctrl+1` … `Alt+Ctrl+9` | also show tag n (multi-view) |
 | `Alt+Shift+Ctrl+1` … `Alt+Shift+Ctrl+9` | toggle that tag on the focused window |
 | `Super+J` / `Super+K` | focus next / previous window |
 | `Super+Shift+J` / `Super+Shift+K` | swap focused window next / previous |
 | `Super+Return` | zoom (promote focused window to master) |
-| `Super+Ctrl+H` / `Super+Ctrl+L` | shrink / grow the master area (`Super+L` is the lock key) |
+| `Super+H` / `Super+L` | shrink / grow the master area (`Ctrl+H/L` also works) |
 | `Super+Shift+H` / `Super+Shift+L` | fewer / more master windows |
 | `Super+Up` / `Super+Right` / `Super+Down` / `Super+Left` | move the master area (top / right / bottom / left) |
 | `Super+Alt+Shift+H` / `L` | resize window horizontally (− / + 100 px) |
@@ -47,7 +47,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |
-| `Super+L` / `Super+Escape` | lock the session |
+| `Super+Escape` / `Super+Alt+L` | lock the session |
 | `Super+Shift+E` | log out of river (returns to GDM) |
 | `Alt+B` | show / hide the bar |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic) |
