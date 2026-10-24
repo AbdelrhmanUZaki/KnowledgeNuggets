@@ -2,6 +2,7 @@
 # Compile (once) and run view-watcher: single-view = edge-to-edge with no
 # border, multi-view = 12 px gaps and a 2 px border. See view-watcher.c.
 set -u
+export PATH="$HOME/.local/bin:$PATH"
 
 here=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 state="${XDG_STATE_HOME:-$HOME/.local/state}/river-classic"
@@ -12,7 +13,7 @@ src="$here/view-watcher.c"
 xml="$here/river-status-unstable-v1.xml"
 
 if [ -x "$bin" ] && [ "$bin" -nt "$src" ] && [ "$bin" -nt "$xml" ]; then
-    exec "$bin"
+    exec "$bin" >>"$state/view-watcher.log" 2>&1
 fi
 
 if ! command -v wayland-scanner >/dev/null 2>&1 ||
@@ -38,4 +39,4 @@ if ! cc -O2 -Wall -Wextra -o "$bin.tmp" "$src" "$tmp/river-status-protocol.c" -I
 fi
 
 mv "$bin.tmp" "$bin" || exit 0
-exec "$bin"
+exec "$bin" >>"$state/view-watcher.log" 2>&1

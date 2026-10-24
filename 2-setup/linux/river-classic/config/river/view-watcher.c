@@ -43,6 +43,20 @@ static struct zriver_status_manager_v1 *status_manager;
 static struct output *outputs;
 static int last_multi = -1; /* -1 unknown, 0 single, 1 multi */
 static int pending = 0;
+static char riverctl_path[4096] = "riverctl";
+
+static void resolve_riverctl(void) {
+    const char *home = getenv("HOME");
+    if (home) {
+        snprintf(riverctl_path, sizeof(riverctl_path), "%s/.local/bin/riverctl", home);
+        if (access(riverctl_path, X_OK) == 0)
+            return;
+    }
+    snprintf(riverctl_path, sizeof(riverctl_path), "/usr/bin/riverctl");
+    if (access(riverctl_path, X_OK) == 0)
+        return;
+    snprintf(riverctl_path, sizeof(riverctl_path), "/usr/local/bin/riverctl");
+}
 
 static void run(char *const argv[]) {
     pid_t pid = fork();
@@ -77,15 +91,15 @@ static void apply(void) {
             n, multi ? 2 : 0, multi ? 6 : 0);
 
     if (multi) {
-        run((char *const[]){ "riverctl", "border-width", "2", NULL });
-        run((char *const[]){ "riverctl", "send-layout-cmd", "rivertile",
+        run((char *const[]){ riverctl_path, "border-width", "2", NULL });
+        run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
                              "view-padding 6", NULL });
     } else {
-        run((char *const[]){ "riverctl", "border-width", "0", NULL });
-        run((char *const[]){ "riverctl", "send-layout-cmd", "rivertile",
+        run((char *const[]){ riverctl_path, "border-width", "0", NULL });
+        run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
                              "view-padding 0", NULL });
     }
-    run((char *const[]){ "riverctl", "send-layout-cmd", "rivertile",
+    run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
                          "outer-padding 0", NULL });
 }
 
@@ -154,6 +168,7 @@ static const struct wl_registry_listener registry_listener = {
 };
 
 int main(void) {
+    resolve_riverctl();
     display = wl_display_connect(NULL);
     if (!display) {
         fprintf(stderr, "view-watcher: cannot connect to the compositor\n");
