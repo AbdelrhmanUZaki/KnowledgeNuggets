@@ -86,7 +86,7 @@ Volume and brightness keys also work while the session is locked.
 | 2-finger drag | natural scroll (touchpad only; a mouse wheel is unchanged) |
 
 The gesture daemon mirrors the pad through a non-clickpad uinput clone, so
-libinput keeps acceleration, palm rejection, tap-to-click, disable-while-typing
+libinput keeps acceleration, palm rejection and tap-to-click (disable-while-typing is off, see README)
 and tap-and-drag. libinput's own middle click on a 3-finger tap is suppressed
 by injecting a phantom 4th touch during the gesture (libinput's tap state
 machine goes DEAD), so a 3-finger tap only ever goes back.

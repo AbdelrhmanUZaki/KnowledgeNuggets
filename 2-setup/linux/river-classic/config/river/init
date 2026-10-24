@@ -327,7 +327,11 @@ riverctl input '*Touchpad' tap enabled
 riverctl input '*Touchpad' tap-button-map left-right-middle   # 2-finger tap = right
 riverctl input '*Touchpad' click-method clickfinger           # physical: 2 fingers = right
 riverctl input '*Touchpad' natural-scroll enabled
-riverctl input '*Touchpad' disable-while-typing enabled
+# Disable-while-typing is OFF: with kanata's virtual keyboard ahead of the
+# touchpad clone it occasionally left the pad completely unresponsive (pointer
+# frozen, taps/scroll dead) even with no key held. Re-enable this line if you
+# prefer libinput's typing suppression.
+riverctl input '*Touchpad' disable-while-typing disabled
 riverctl input '*Touchpad' drag enabled
 # pointer speed: libinput's speed range is -1.0..1.0 (0.0 = default). The user
 # settled on 0.2; touchpad only, so an external mouse keeps its own speed.

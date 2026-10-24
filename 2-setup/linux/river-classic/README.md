@@ -144,6 +144,11 @@ The complete list — including resize, output, touchpad and kanata bindings —
 window/tag action below has an Alt form. Alt+arrows, Alt+F and Alt+Space are
 deliberately left free for applications.
 
+**Touchpad typing suppression** (`disable-while-typing`) is **off**: with the
+kanata virtual keyboard in front of the clone it could leave the pad dead
+(pointer frozen, taps/scroll ignored) even with no key held. Turn it back on
+in `config/river/init` if you want libinput to ignore the pad while typing.
+
 **Borders and gaps**: no gap between the windows and the screen edge; tiled
 views are separated by 12 px, with a 2 px gold border on the focused window.
 A single window fills the whole output with no gaps and no border. The gap
@@ -507,7 +512,7 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   3-finger tap = back, 4-finger tap = forward, **3-finger swipe up/down = volume,
   4-finger swipe up/down = brightness**, and physical clicks map 1 finger = left,
   2 or 3 fingers = right. The daemon mirrors the pad through uinput so libinput
-  keeps doing acceleration, palm rejection, DWT, tap-to-click, 2-finger scrolling
+  keeps doing acceleration, palm rejection, tap-to-click, 2-finger scrolling
   and tap-and-drag. The swipe reference restarts whenever the finger count
   changes, so a palm landing mid-gesture cannot bend it, and the steps are
   batched into one `brightness.sh bump` / `wpctl` call per frame.
