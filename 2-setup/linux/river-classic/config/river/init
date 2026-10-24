@@ -114,6 +114,20 @@ map_us normal Super+Control L send-layout-cmd rivertile "main-ratio +0.05"
 map_us normal Super+Shift H send-layout-cmd rivertile "main-count -1"
 map_us normal Super+Shift L send-layout-cmd rivertile "main-count +1"
 
+# Alt aliases for the comfortable window keys (Alt exists on both keyboard
+# sides). Deliberately NOT aliased: Alt+arrows (browser history), Alt+F
+# (Firefox menu), Alt+Space (app window menu) - those stay Super-only.
+map_us normal Alt J focus-view next
+map_us normal Alt K focus-view previous
+map_us normal Alt+Shift J swap next
+map_us normal Alt+Shift K swap previous
+map_us normal Alt Q close
+map_us normal Alt Return zoom
+map_us normal Alt H send-layout-cmd rivertile "main-ratio -0.05"
+map_us normal Alt L send-layout-cmd rivertile "main-ratio +0.05"
+map_us normal Alt+Shift H send-layout-cmd rivertile "main-count -1"
+map_us normal Alt+Shift L send-layout-cmd rivertile "main-count +1"
+
 # orientation like dwm's mfact side change
 riverctl map normal Super Up    send-layout-cmd rivertile "main-location top"
 riverctl map normal Super Right send-layout-cmd rivertile "main-location right"
