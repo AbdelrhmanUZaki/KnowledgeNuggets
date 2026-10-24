@@ -336,38 +336,45 @@ class Engine:
 
 # ── tap hide window (kills libinput's stray 3-finger middle click) ──────────
 class TapHider:
-    """Hold the finger-`up` frames of a 3+-finger tap for TAP_HIDE_S.
+    """Hold the *last* finger-`up` of a 3+-finger tap for TAP_HIDE_S.
 
-    libinput reacts to a quick multi-finger tap with a middle click; that
-    cannot be disabled (only LRM/LMR tap maps exist), and it is why one
-    3-finger tap both goes "back" and opens a new tab in a browser.  Delaying
-    only the release frames makes libinput see a long press instead of a tap,
-    so no click is emitted.  Everything else is forwarded untouched.
+    libinput turns a quick multi-finger tap into a middle click; that cannot
+    be disabled (only LRM/LMR tap maps exist), and it is why one 3-finger tap
+    both goes "back" and opens a link in a new tab.  Delaying just the final
+    lift makes libinput see a long press instead of a tap, so no click is
+    emitted.  The held frame is flushed together with a SYN_REPORT, otherwise
+    libinput would never process the lift.
     """
 
     def __init__(self, delay=TAP_HIDE_S):
         self.delay = delay
-        self._pending = []
-        self._since = None
+        self._held = None          # (frame, monotonic_since, sec, usec)
 
-    def feed(self, release, frame, candidate, now):
+    def _flush(self):
+        frame, _, sec, usec = self._held
+        self._held = None
+        syn = struct.pack(EVENT_FMT, sec, usec, EV_SYN, SYN_REPORT, 0)
+        return frame + syn
+
+    def feed(self, frame, hold, now):
         """Return the bytes to forward for this frame (b"" = held)."""
-        if release and candidate:
-            self._pending.append(frame)
-            if self._since is None:
-                self._since = now
-            return b""
-        return frame
+        if not hold:
+            return frame
+        out = self._flush() if self._held is not None else b""
+        sec, usec = struct.unpack(EVENT_FMT, frame)[:2]
+        self._held = (frame, now, sec, usec)
+        log("tap-hide: holding final lift (%.0f ms)" % (self.delay * 1000))
+        return out
 
     def drain(self, now):
-        """Return held bytes once the hide window has elapsed."""
-        if (self._pending and self._since is not None
-                and now - self._since >= self.delay):
-            data = b"".join(self._pending)
-            self._pending = []
-            self._since = None
-            return data
-        return b""
+        """Return the held release + SYN_REPORT once the window elapsed."""
+        if self._held is None:
+            return b""
+        if now - self._held[1] < self.delay:
+            return b""
+        held_for = (now - self._held[1]) * 1000.0
+        log("tap-hide: flushed lift after %.0f ms" % held_for)
+        return self._flush()
 
 
 # ── uinput virtual mouse (back/forward only) ─────────────────────────────────
@@ -777,19 +784,22 @@ def run(parent=None, gestures_only=False):
                             active_btn = None
                     continue
 
-                # Capture the candidate state *before* feed_abs(): the last
-                # finger-up resets the engine.
+                # Capture state *before* feed_abs(): the last finger-up
+                # resets the engine.  Only the final lift is held: it is the
+                # event libinput uses to decide "that was a 3-finger tap".
                 candidate = (etype == EV_ABS and engine.tap_candidate(now))
+                last_lift = (etype == EV_ABS
+                             and code == ABS_MT_TRACKING_ID and value == -1
+                             and engine.finger_count() == 1)
 
                 if etype == EV_ABS:
                     for action in engine.feed_abs(code, value, now):
                         dispatch(mouse, action)
 
                 if out is not None:
-                    release = (etype == EV_ABS
-                               and code == ABS_MT_TRACKING_ID and value == -1)
-                    out += hider.feed(release, data[off:off + EVENT_SIZE],
-                                      candidate, now)
+                    out += hider.feed(data[off:off + EVENT_SIZE],
+                                      candidate and last_lift,
+                                      time.monotonic())
 
             if out is not None:
                 out += hider.drain(time.monotonic())
@@ -955,27 +965,38 @@ def selftest():
     if not ok:
         failures.append("partial X-only frame")
 
-    # ── TapHider: hide only a 3+-finger tap's releases from libinput ───────
-    def hider_case(label, want_forwarded):
-        h = TapHider(delay=0.55)
-        out = h.feed(release=True, frame=b"UP", candidate=True, now=10.0)
-        early = h.drain(9.9)
-        late = h.drain(10.55)
-        ok = (out == b"" and early == b"" and late == b"UP") == want_forwarded
-        print("%-46s %s" % (label, "ok " if ok else "FAIL"))
-        if not ok:
-            failures.append(label)
-
-    # 3-finger tap: release held, then flushed after TAP_HIDE_S
-    hider_case("3-finger tap release hidden then flushed", True)
+    # ── TapHider: hide a 3+-finger tap's final lift from libinput ───────────
+    lift = struct.pack(EVENT_FMT, 7, 8, EV_ABS, ABS_MT_TRACKING_ID, -1)
 
     h = TapHider(delay=0.55)
-    ok = (h.feed(release=True, frame=b"UP", candidate=False, now=10.0) == b"UP"
-          and h.drain(10.6) == b"")
-    print("%-46s %s" % ("non-tap release forwarded immediately",
+    held = h.feed(lift, hold=True, now=10.0)
+    early = h.drain(10.2)
+    late = h.drain(10.55)
+    syn_ok = (len(late) == 2 * EVENT_SIZE
+              and struct.unpack(EVENT_FMT, late[EVENT_SIZE:])[2:4]
+              == (EV_SYN, SYN_REPORT))
+    ok = held == b"" and early == b"" and syn_ok
+    print("%-46s %s" % ("tap lift hidden, then flushed with SYN_REPORT",
                         "ok " if ok else "FAIL"))
     if not ok:
-        failures.append("non-tap release forwarded")
+        failures.append("tap lift hidden")
+
+    h = TapHider(delay=0.55)
+    ok = (h.feed(lift, hold=False, now=10.0) == lift and h.drain(10.6) == b"")
+    print("%-46s %s" % ("non-tap lift forwarded immediately",
+                        "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("non-tap lift forwarded")
+
+    # a second held tap flushes the first one rather than losing it
+    h = TapHider(delay=0.55)
+    h.feed(lift, hold=True, now=10.0)
+    out = h.feed(lift, hold=True, now=10.1)
+    ok = len(out) == 2 * EVENT_SIZE
+    print("%-46s %s" % ("second tap flushes the first held lift",
+                        "ok " if ok else "FAIL"))
+    if not ok:
+        failures.append("second tap flushes first")
 
     eng = Engine(1000, 1000)
     t = 20.0
