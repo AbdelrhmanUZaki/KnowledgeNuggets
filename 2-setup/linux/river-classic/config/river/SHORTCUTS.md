@@ -87,9 +87,10 @@ Volume and brightness keys also work while the session is locked.
 The gesture daemon mirrors the pad through a non-clickpad uinput clone, so
 libinput keeps acceleration, palm rejection, tap-to-click, disable-while-typing
 and tap-and-drag. libinput's own middle click on a 3-finger tap is suppressed
-by holding that tap's release frames past libinput's tap deadline, so a 3-finger
-tap only ever goes back. `python3 ~/.config/river/gestures.py --selftest` runs
-the engine + tap-hide tests; `--off` restores stock clickfinger.
+by injecting a phantom 4th touch during the gesture (libinput's tap state
+machine goes DEAD), so a 3-finger tap only ever goes back.
+`python3 ~/.config/river/gestures.py --selftest` runs the engine + phantom
+tests; `--off` restores stock clickfinger.
 
 ## Kanata keyboard layer
 

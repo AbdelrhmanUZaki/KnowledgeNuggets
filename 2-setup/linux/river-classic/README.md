@@ -498,10 +498,10 @@ Full troubleshooting history: [PROGRESS.md](PROGRESS.md).
   changes, so a palm landing mid-gesture cannot bend it, and the steps are
   batched into one `brightness.sh bump` / `wpctl` call per frame.
   libinput would also emit a **middle click on a 3-finger tap** (the stray
-  click that opens a link in a new tab); the forwarder now hides just the
-  release frames of that tap from libinput for 0.55 s, so libinput sees a long
-  press instead of a tap. The back action still fires instantly; 1/2-finger
-  taps are untouched.
+  click that opens a link in a new tab). While a 3+-finger gesture is live the
+  daemon injects a phantom 4th touch into the clone, which puts libinput's tap
+  state machine into `DEAD`, so no click is synthesised; 3-tap=back /
+  4-tap=forward still fire instantly, and 1/2-finger taps are untouched.
   Install the udev rule once (it covers the gesture daemon **and** kanata; both
   are spawned by `init`):
   ```sh

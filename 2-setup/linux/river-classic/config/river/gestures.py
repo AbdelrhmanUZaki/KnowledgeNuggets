@@ -33,9 +33,12 @@ taps/swipes still work and physical clicks stay exactly as libinput made them.
 
 1- and 2-finger *taps* are left to libinput (`tap enabled`): it already maps
 them to left/right, and only it knows about palm rejection and
-disable-while-typing.  That is also why a 3-finger tap still emits libinput's
-middle click in addition to the back action -- unavoidable without giving up
-libinput's tap handling, which would hurt far more.
+disable-while-typing.  A 3-finger tap would *also* make libinput emit a
+middle click (the browser's "open link in new tab"), which cannot be turned
+off by configuration; while a 3+-finger gesture is live the daemon therefore
+injects a phantom 4th touch into the clone, which puts libinput's tap state
+machine into TAP_STATE_DEAD, so no click is synthesised.  3-tap=back and
+4-tap=forward still fire immediately from the raw stream.
 
 Requires read access to the touchpad and write access to /dev/uinput; install
 `udev/70-river-classic-input.rules` (see README) or run as root.
@@ -65,6 +68,34 @@ EV_MAX = 0x1F
 SYN_REPORT, SYN_DROPPED = 0x00, 0x03
 BTN_LEFT, BTN_RIGHT, BTN_MIDDLE = 0x110, 0x111, 0x112
 BTN_SIDE, BTN_EXTRA = 0x113, 0x114
+
+
+PHANTOM_TRACKING_ID = 0xFFFF
+
+
+def phantom_down(slot, x, y, sec, usec):
+    """Synthetic 4th touch for the clone.
+
+    libinput's tap state machine goes to TAP_STATE_DEAD when a 4th touch
+    arrives (evdev-mt-touchpad-tap.c: TAP_EVENT_TOUCH in TAP_STATE_TOUCH_3),
+    and a DEAD tap never emits a button.  That makes the 3-finger tap's stray
+    middle click impossible regardless of release ordering or timing.
+    """
+    frames = ((ABS_MT_SLOT, slot),
+              (ABS_MT_TRACKING_ID, PHANTOM_TRACKING_ID),
+              (ABS_MT_POSITION_X, x),
+              (ABS_MT_POSITION_Y, y))
+    return b"".join(struct.pack(EVENT_FMT, sec, usec, EV_ABS, code, value)
+                    for code, value in frames) + \
+        struct.pack(EVENT_FMT, sec, usec, EV_SYN, SYN_REPORT, 0)
+
+
+def phantom_up(slot, sec, usec):
+    return b"".join((
+        struct.pack(EVENT_FMT, sec, usec, EV_ABS, ABS_MT_SLOT, slot),
+        struct.pack(EVENT_FMT, sec, usec, EV_ABS, ABS_MT_TRACKING_ID, -1),
+        struct.pack(EVENT_FMT, sec, usec, EV_SYN, SYN_REPORT, 0),
+    ))
 ABS_MT_SLOT, ABS_MT_POSITION_X, ABS_MT_POSITION_Y = 0x2F, 0x35, 0x36
 ABS_MT_TRACKING_ID = 0x39
 INPUT_PROP_POINTER, INPUT_PROP_BUTTONPAD = 0x00, 0x01
@@ -125,14 +156,6 @@ BRIGHTNESS_STEP = 2        # percent per step (brightness.sh uses 2% as well)
 # which vertical swipe belongs to which finger count
 SWIPE_FINGERS = {3: "volume", 4: "brightness"}
 TAP_ACTIONS = {3: "back", 4: "forward"}
-
-# A 3+-finger tap must reach libinput as a *long press*, not a tap: libinput
-# always turns a quick 3-finger tap into a middle click, and that stray click
-# is what opens a new tab when the cursor is over a link.  It cannot be turned
-# off by configuration (libinput only offers LRM/LMR tap maps), so the
-# forwarder holds the finger-`up` frames for this long.  The daemon's own
-# back/forward action still fires instantly from the raw stream.
-TAP_HIDE_S = 0.55
 
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME",
                                     os.path.expanduser("~/.local/state")),
@@ -312,16 +335,15 @@ class Engine:
         step = 1 if dy < 0 else -1          # finger up -> brighter / louder
         return [(kind, step * n)]
 
-    def tap_candidate(self, now):
-        """True while the live touch could still become a 3+-finger tap.
+    def hold_candidate(self):
+        """True while a 3+-finger touch could still become a tap.
 
-        The forwarder hides the release frames of exactly these touches from
-        libinput (see TapHider), so a 3-finger tap never becomes libinput's
-        middle click.
+        The forwarder injects the phantom 4th touch for exactly these
+        gestures, so libinput never synthesises its 3-finger middle click.
+        No duration limit: a slow tap still gets the phantom.
         """
         return (self.started is not None and not self.saw_click
-                and not self.swiping and self.max_count >= 3
-                and now - self.started <= TAP_MAX_S)
+                and not self.swiping and self.max_count >= 3)
 
     def _finish(self, now):
         tap = None
@@ -332,56 +354,6 @@ class Engine:
                 tap = TAP_ACTIONS.get(self.max_count)
         self.reset()
         return tap
-
-
-# ── tap hide window (kills libinput's stray 3-finger middle click) ──────────
-class TapHider:
-    """Hold the *last* finger-`up` of a 3+-finger tap for TAP_HIDE_S.
-
-    libinput turns a quick multi-finger tap into a middle click; that cannot
-    be disabled (only LRM/LMR tap maps exist), and it is why one 3-finger tap
-    both goes "back" and opens a link in a new tab.  Delaying just the final
-    lift makes libinput see a long press instead of a tap, so no click is
-    emitted.  The held frame is flushed together with a SYN_REPORT, otherwise
-    libinput would never process the lift.
-    """
-
-    def __init__(self, delay=TAP_HIDE_S):
-        self.delay = delay
-        self._held = None          # (frame, monotonic_since, sec, usec)
-
-    def _flush(self):
-        frame, _, sec, usec = self._held
-        self._held = None
-        syn = struct.pack(EVENT_FMT, sec, usec, EV_SYN, SYN_REPORT, 0)
-        return frame + syn
-
-    def feed(self, frame, hold, now):
-        """Return the bytes to forward for this frame (b"" = held)."""
-        if not hold:
-            return frame
-        out = self._flush() if self._held is not None else b""
-        sec, usec = struct.unpack(EVENT_FMT, frame)[:2]
-        self._held = (frame, now, sec, usec)
-        log("tap-hide: holding final lift (%.0f ms)" % (self.delay * 1000))
-        return out
-
-    def drain(self, now):
-        """Return the held release + SYN_REPORT once the window elapsed."""
-        if self._held is None:
-            return b""
-        if now - self._held[1] < self.delay:
-            return b""
-        held_for = (now - self._held[1]) * 1000.0
-        log("tap-hide: flushed lift after %.0f ms" % held_for)
-        return self._flush()
-
-    def flush_now(self):
-        """Flush a pending release early (a new touch is starting)."""
-        if self._held is None:
-            return b""
-        log("tap-hide: flushing lift early for a new touch")
-        return self._flush()
 
 
 # ── uinput virtual mouse (back/forward only) ─────────────────────────────────
@@ -732,20 +704,11 @@ def run(parent=None, gestures_only=False):
 
         active_btn = None
         last_parent_check = 0.0
-        hider = TapHider()
+        phantom_slot = None
 
         while not stopping["now"]:
             ready, _, _ = select.select([fd], [], [], 0.5)
             if not ready:
-                # a held tap release must still reach the clone even when no
-                # further touchpad event arrives to trigger the flush
-                if clone is not None and grabbed:
-                    pending = hider.drain(time.monotonic())
-                    if pending:
-                        try:
-                            clone.write(pending)
-                        except OSError:
-                            pass
                 if time.monotonic() - last_parent_check > 1.0:
                     last_parent_check = time.monotonic()
                     if not parent_alive(parent):
@@ -791,31 +754,27 @@ def run(parent=None, gestures_only=False):
                             active_btn = None
                     continue
 
-                # Capture state *before* feed_abs(): the last finger-up
-                # resets the engine.  Only the final lift is held: it is the
-                # event libinput uses to decide "that was a 3-finger tap".
-                candidate = (etype == EV_ABS and engine.tap_candidate(now))
-                last_lift = (etype == EV_ABS
-                             and code == ABS_MT_TRACKING_ID and value == -1
-                             and engine.finger_count() == 1)
-
                 if etype == EV_ABS:
                     for action in engine.feed_abs(code, value, now):
                         dispatch(mouse, action)
 
-                if out is not None:
-                    # A new finger landing means libinput's verdict on the
-                    # previous tap is already final: don't leave that finger
-                    # "down" on the clone while this gesture starts.
-                    if (etype == EV_ABS and code == ABS_MT_TRACKING_ID
-                            and value >= 0):
-                        out += hider.flush_now()
-                    out += hider.feed(data[off:off + EVENT_SIZE],
-                                      candidate and last_lift,
-                                      time.monotonic())
+                # Evaluate *after* feed_abs(): the third finger's own DOWN
+                # frame is what makes this a 3-finger candidate, and the tap
+                # window must open before any BTN_TOOL_* release can leak.
+                candidate = engine.hold_candidate()
 
-            if out is not None:
-                out += hider.drain(time.monotonic())
+                if out is not None:
+                    out += data[off:off + EVENT_SIZE]
+
+            if out is not None and clone is not None:
+                if candidate and phantom_slot is None:
+                    phantom_slot = max(engine.slots, default=0) + 1
+                    x = int(engine._avg_x()) if engine._coords() else x_range // 2
+                    y = int(engine._avg_y()) if engine._coords() else y_range // 2
+                    out += phantom_down(phantom_slot, x, y, sec, usec)
+                elif phantom_slot is not None and engine.finger_count() == 0:
+                    out += phantom_up(phantom_slot, sec, usec)
+                    phantom_slot = None
             if out is not None and clone is not None:
                 try:
                     clone.write(out)
@@ -835,6 +794,11 @@ def run(parent=None, gestures_only=False):
         if grabbed:
             try:
                 fcntl.ioctl(fd, EVIOCGRAB, 0)
+            except OSError:
+                pass
+        if clone is not None and phantom_slot is not None:
+            try:
+                clone.write(phantom_up(phantom_slot, 0, 0))
             except OSError:
                 pass
         if clone is not None:
@@ -978,38 +942,20 @@ def selftest():
     if not ok:
         failures.append("partial X-only frame")
 
-    # ── TapHider: hide a 3+-finger tap's final lift from libinput ───────────
-    lift = struct.pack(EVENT_FMT, 7, 8, EV_ABS, ABS_MT_TRACKING_ID, -1)
-
-    h = TapHider(delay=0.55)
-    held = h.feed(lift, hold=True, now=10.0)
-    early = h.drain(10.2)
-    late = h.drain(10.55)
-    syn_ok = (len(late) == 2 * EVENT_SIZE
-              and struct.unpack(EVENT_FMT, late[EVENT_SIZE:])[2:4]
-              == (EV_SYN, SYN_REPORT))
-    ok = held == b"" and early == b"" and syn_ok
-    print("%-46s %s" % ("tap lift hidden, then flushed with SYN_REPORT",
+    # ── phantom 4th finger: make libinput's tap state DEAD ─────────────────
+    down = phantom_down(3, 900, 600, 11, 12)
+    up = phantom_up(3, 11, 13)
+    ok = (len(down) == 5 * EVENT_SIZE and len(up) == 3 * EVENT_SIZE
+          and struct.unpack(EVENT_FMT, down[EVENT_SIZE:2 * EVENT_SIZE])[2:5]
+          == (EV_ABS, ABS_MT_TRACKING_ID, PHANTOM_TRACKING_ID)
+          and struct.unpack(EVENT_FMT, up[EVENT_SIZE:2 * EVENT_SIZE])[2:5]
+          == (EV_ABS, ABS_MT_TRACKING_ID, -1)
+          and struct.unpack(EVENT_FMT, down[-EVENT_SIZE:])[2:4]
+          == (EV_SYN, SYN_REPORT))
+    print("%-46s %s" % ("phantom touch down/up frames are well formed",
                         "ok " if ok else "FAIL"))
     if not ok:
-        failures.append("tap lift hidden")
-
-    h = TapHider(delay=0.55)
-    ok = (h.feed(lift, hold=False, now=10.0) == lift and h.drain(10.6) == b"")
-    print("%-46s %s" % ("non-tap lift forwarded immediately",
-                        "ok " if ok else "FAIL"))
-    if not ok:
-        failures.append("non-tap lift forwarded")
-
-    # a second held tap flushes the first one rather than losing it
-    h = TapHider(delay=0.55)
-    h.feed(lift, hold=True, now=10.0)
-    out = h.feed(lift, hold=True, now=10.1)
-    ok = len(out) == 2 * EVENT_SIZE
-    print("%-46s %s" % ("second tap flushes the first held lift",
-                        "ok " if ok else "FAIL"))
-    if not ok:
-        failures.append("second tap flushes first")
+        failures.append("phantom frames")
 
     eng = Engine(1000, 1000)
     t = 20.0
@@ -1018,18 +964,18 @@ def selftest():
         eng.feed_abs(ABS_MT_TRACKING_ID, 400 + i, t)
         eng.feed_abs(ABS_MT_POSITION_X, 500 + i * 7, t)
         eng.feed_abs(ABS_MT_POSITION_Y, 500 + i * 5, t)
-    ok = eng.tap_candidate(t + 0.05)
-    print("%-46s %s" % ("3 fingers down is a tap candidate",
+    ok = eng.hold_candidate()
+    print("%-46s %s" % ("3 fingers down arms the phantom finger",
                         "ok " if ok else "FAIL"))
     if not ok:
-        failures.append("3-finger tap candidate")
+        failures.append("phantom armed")
 
     eng.note_click(True)
-    ok = not eng.tap_candidate(t + 0.06)
-    print("%-46s %s" % ("physical click is not a tap candidate",
+    ok = not eng.hold_candidate()
+    print("%-46s %s" % ("physical click does not arm the phantom",
                         "ok " if ok else "FAIL"))
     if not ok:
-        failures.append("click not a tap candidate")
+        failures.append("phantom not armed on click")
 
     print("\n%s" % ("all good" if not failures else "FAILURES: %s" % failures))
     return 1 if failures else 0
