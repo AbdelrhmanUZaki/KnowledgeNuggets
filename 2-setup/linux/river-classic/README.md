@@ -140,26 +140,30 @@ The complete list — including resize, output, touchpad and kanata bindings —
 [`config/river/SHORTCUTS.md`](config/river/SHORTCUTS.md); press `Super+F1` (or
 `Super+?`) to open it in a terminal at any time.
 
+**Alt is a full WM modifier too** (the external keyboard has no right Super): every
+window/tag action below has an Alt form. Alt+arrows, Alt+F and Alt+Space are
+deliberately left free for applications.
+
 | Keys | Action |
 |---|---|
 | `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
-| `Super+Escape` / `Super+Alt+L` | lock the session (power bar also has Switch user / power / reboot) |
+| `Alt+Escape` / `Super+Escape` / `Super+Alt+L` | lock the session (power bar also has Switch user / power / reboot) |
 | `Alt+1..9` or `Super+1..9` | switch to tag · `Alt+0`/`Super+0` = all tags |
 | `Alt+Shift+1..9` or `Super+Shift+1..9` | **move the focused window to that tag** · `Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
 | `Alt+T` | terminal (foot) |
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
-| `Super+P` | launcher (fuzzel) |
-| `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
+| `Super+P` / `Alt+P` | launcher (fuzzel) |
+| `Super+V` / `Alt+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
-| `Super+Shift+Space` | toggle floating |
-| `Super+F` | toggle fullscreen |
+| `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
+| `Super+F` / `Alt+Shift+F` | toggle fullscreen |
 | `Super+Return` (or `Alt+Return`) | zoom / `Super+H/L` (or `Alt+H/L`) master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` (or `Alt+Q`) | close · `Super+Shift+E` exit river |
-| `Super+Period` / `Super+Comma` | switch monitor |
+| `Super+Period` / `Super+Comma` (or `Alt+Period/Comma`) | switch monitor |
 | `Alt+B` | show/hide the bar (waybar's SIGUSR1 toggle) |
-| `Print` / `Super+Shift+Print` | screenshot full / region |
+| `Print` / `Super+Shift+Print` / `Alt+Shift+Print` | screenshot full / region |
 | `XF86AudioPlay/Pause/Next/Prev` | media keys |
 
 > Browser caveat: Firefox/Chromium also use `Alt+<number>` for tab switching — the

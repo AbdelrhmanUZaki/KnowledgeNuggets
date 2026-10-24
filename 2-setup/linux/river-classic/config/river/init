@@ -128,6 +128,28 @@ map_us normal Alt L send-layout-cmd rivertile "main-ratio +0.05"
 map_us normal Alt+Shift H send-layout-cmd rivertile "main-count -1"
 map_us normal Alt+Shift L send-layout-cmd rivertile "main-count +1"
 
+# Alt as a *full* window-management modifier (external keyboard has no right
+# Super, and AltGr is unused here).  These deliberately avoid the combos apps
+# need: Alt+arrows, Alt+F and Alt+Space stay unbound on Alt.
+riverctl map normal Alt+Shift Space toggle-float
+map_us normal Alt+Shift F toggle-fullscreen
+riverctl map normal Alt+Shift Up    send-layout-cmd rivertile "main-location top"
+riverctl map normal Alt+Shift Right send-layout-cmd rivertile "main-location right"
+riverctl map normal Alt+Shift Down  send-layout-cmd rivertile "main-location bottom"
+riverctl map normal Alt+Shift Left  send-layout-cmd rivertile "main-location left"
+riverctl map normal Alt Period focus-output next
+riverctl map normal Alt Comma focus-output previous
+riverctl map normal Alt+Shift Period send-to-output next
+riverctl map normal Alt+Shift Comma send-to-output previous
+riverctl map normal Alt Escape spawn "$HOME/.config/river/lock-session.sh"
+map_us normal Alt P spawn fuzzel
+map_us normal Alt V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"
+riverctl map normal Alt+Shift Print spawn "$HOME/.config/river/screenshot.sh"
+map_us normal Alt+Control+Shift H resize horizontal -100
+map_us normal Alt+Control+Shift L resize horizontal 100
+map_us normal Alt+Control+Shift J resize vertical 100
+map_us normal Alt+Control+Shift K resize vertical -100
+
 # orientation like dwm's mfact side change
 riverctl map normal Super Up    send-layout-cmd rivertile "main-location top"
 riverctl map normal Super Right send-layout-cmd rivertile "main-location right"

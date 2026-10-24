@@ -26,14 +26,14 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Super+Return` (or `Alt+Return`) | zoom (promote focused window to master) |
 | `Super+H` / `Super+L` (or `Alt+H/L`) | shrink / grow the master area |
 | `Super+Shift+H` / `Super+Shift+L` | fewer / more master windows |
-| `Super+Up` / `Super+Right` / `Super+Down` / `Super+Left` | move the master area (top / right / bottom / left) |
+| `Super+Up/Down/Left/Right` (or `Alt+Shift+arrows`) | move the master area |
 | `Super+Alt+Shift+H` / `L` | resize window horizontally (− / + 100 px) |
 | `Super+Alt+Shift+J` / `K` | resize window vertically (+ / − 100 px) |
 | `Super+Q` (or `Alt+Q`) | close the focused window |
-| `Super+Shift+Space` | toggle floating |
-| `Super+F` | toggle fullscreen |
-| `Super+Period` / `Super+Comma` | focus next / previous monitor |
-| `Super+Shift+Period` / `Super+Shift+Comma` | send window to next / previous monitor |
+| `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
+| `Super+F` / `Alt+Shift+F` | toggle fullscreen |
+| `Super+Period` / `Super+Comma` (or `Alt+Period/Comma`) | focus next / previous monitor |
+| `Super+Shift+Period` / `Super+Shift+Comma` (or `Alt+Shift+Period/Comma`) | send window to next / previous monitor |
 | `Super+Left` drag | move a view |
 | `Super+Right` drag | resize a view |
 | `Super+Middle` click | toggle floating |
@@ -42,12 +42,12 @@ Tags are on **Alt**, matching the old dwm setup.
 
 | Keys | Action |
 |---|---|
-| `Super+P` | app launcher (fuzzel) |
+| `Super+P` / `Alt+P` | app launcher (fuzzel) |
 | `Alt+T` | terminal (foot) |
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |
-| `Super+Escape` / `Super+Alt+L` | lock the session |
+| `Alt+Escape` / `Super+Escape` / `Super+Alt+L` | lock the session |
 | `Super+Shift+E` | log out of river (returns to GDM) |
 | `Alt+B` | show / hide the bar |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic) |
