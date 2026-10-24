@@ -376,6 +376,13 @@ class TapHider:
         log("tap-hide: flushed lift after %.0f ms" % held_for)
         return self._flush()
 
+    def flush_now(self):
+        """Flush a pending release early (a new touch is starting)."""
+        if self._held is None:
+            return b""
+        log("tap-hide: flushing lift early for a new touch")
+        return self._flush()
+
 
 # ── uinput virtual mouse (back/forward only) ─────────────────────────────────
 class VirtualMouse:
@@ -797,6 +804,12 @@ def run(parent=None, gestures_only=False):
                         dispatch(mouse, action)
 
                 if out is not None:
+                    # A new finger landing means libinput's verdict on the
+                    # previous tap is already final: don't leave that finger
+                    # "down" on the clone while this gesture starts.
+                    if (etype == EV_ABS and code == ABS_MT_TRACKING_ID
+                            and value >= 0):
+                        out += hider.flush_now()
                     out += hider.feed(data[off:off + EVENT_SIZE],
                                       candidate and last_lift,
                                       time.monotonic())
