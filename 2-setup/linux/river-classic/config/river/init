@@ -103,7 +103,10 @@ map_us normal Super K focus-view previous
 map_us normal Super+Shift J swap next          # Mod+Shift+j (push)
 map_us normal Super+Shift K swap previous
 
-riverctl map normal Super Return zoom                # dwm Mod+Return = zoom
+# dwm's Mod+Return opens a terminal; zoom moved to Super+Z.
+riverctl map normal Super Return spawn foot
+map_us normal Super Z zoom
+map_us normal Alt I spawn brave-browser
 
 # master/stack sizing, exactly like dwm
 # master ratio on bare H/L, exactly like dwm (Ctrl+H/L kept as aliases)
@@ -349,4 +352,18 @@ systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESS
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300
 riverctl default-layout rivertile
-rivertile -main-count 1 &   # 1 master + stack (dwm default; '-view-count' does NOT exist in v0.3.17)
+
+# Borders/gaps: no gap to the screen edge, a visible 2 px focused border, and
+# 12 px between tiled views (rivertile insets each view by view-padding).
+riverctl border-color-focused 0xffd700
+riverctl border-color-unfocused 0x3b4252
+riverctl border-color-urgent 0xff5555
+riverctl border-width 2
+rivertile -main-count 1 -outer-padding 0 -view-padding 6 &   # 1 master + stack
+# A single visible view is edge-to-edge with no border; with 2+ views the
+# watcher restores the border and gaps above. It reads river's status protocol
+# (view_tags/focused_tags) and calls riverctl, so rivertile stays stock.
+VIEW_WATCHER="$HOME/.config/river/view-watcher.sh"
+if [ -x "$VIEW_WATCHER" ]; then
+    "$VIEW_WATCHER" >>"$STATE_DIR/view-watcher.log" 2>&1 &
+fi

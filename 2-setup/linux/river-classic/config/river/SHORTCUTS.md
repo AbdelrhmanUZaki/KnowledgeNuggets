@@ -23,7 +23,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Alt+Shift+Ctrl+1` … `Alt+Shift+Ctrl+9` | toggle that tag on the focused window |
 | `Super+J` / `Super+K` (or `Alt+J/K`) | focus next / previous window |
 | `Super+Shift+J` / `Super+Shift+K` (or `Alt+Shift+J/K`) | swap focused window next / previous |
-| `Super+Return` (or `Alt+Return`) | zoom (promote focused window to master) |
+| `Super+Z` (or `Alt+Return`) | zoom (promote focused window to master) |
 | `Super+H` / `Super+L` (or `Alt+H/L`) | shrink / grow the master area |
 | `Super+Shift+H` / `Super+Shift+L` | fewer / more master windows |
 | `Super+Up/Down/Left/Right` (or `Alt+Shift+arrows`) | move the master area |
@@ -43,7 +43,8 @@ Tags are on **Alt**, matching the old dwm setup.
 | Keys | Action |
 |---|---|
 | `Super+P` / `Alt+P` | app launcher (fuzzel) |
-| `Alt+T` | terminal (foot) |
+| `Super+Return` / `Alt+T` | terminal (foot) |
+| `Alt+I` | Brave browser |
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |

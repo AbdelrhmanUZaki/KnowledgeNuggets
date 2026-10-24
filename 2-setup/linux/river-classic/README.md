@@ -144,6 +144,12 @@ The complete list — including resize, output, touchpad and kanata bindings —
 window/tag action below has an Alt form. Alt+arrows, Alt+F and Alt+Space are
 deliberately left free for applications.
 
+**Borders and gaps**: no gap between the windows and the screen edge; tiled
+views are separated by 12 px, with a 2 px gold border on the focused window.
+When a workspace shows a single window it is edge-to-edge with no border at
+all (`config/river/view-watcher.sh` reads river's status protocol and switches
+`border-width`/`view-padding`; stock rivertile is unchanged).
+
 | Keys | Action |
 |---|---|
 | `Super+F1` / `Super+Shift+/` | **show all shortcuts** (this file) |
@@ -153,13 +159,13 @@ deliberately left free for applications.
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
 | `Alt+T` | terminal (foot) |
-| `Super+Shift+Return` | terminal (foot, dwm-style) |
-| `Super+P` / `Alt+P` | launcher (fuzzel) |
+| `Super+Return` / `Super+Shift+Return` | terminal (foot) |
+| `Super+P` / `Alt+P` | launcher (fuzzel) · `Alt+I` = Brave |
 | `Super+V` / `Alt+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
 | `Super+F` / `Alt+Shift+F` | toggle fullscreen |
-| `Super+Return` (or `Alt+Return`) | zoom / `Super+H/L` (or `Alt+H/L`) master ratio · `Super+Shift+H/L` master count |
+| `Super+Z` (or `Alt+Return`) | zoom / `Super+H/L` (or `Alt+H/L`) master ratio · `Super+Shift+H/L` master count |
 | `Super+Q` (or `Alt+Q`) | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` (or `Alt+Period/Comma`) | switch monitor |
 | `Alt+B` | show/hide the bar (waybar's SIGUSR1 toggle) |
