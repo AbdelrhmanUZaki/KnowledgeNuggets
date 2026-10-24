@@ -21,15 +21,15 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Alt+Shift+0` | put the focused window on every tag |
 | `Alt+Ctrl+1` … `Alt+Ctrl+9` | also show tag n (multi-view) |
 | `Alt+Shift+Ctrl+1` … `Alt+Shift+Ctrl+9` | toggle that tag on the focused window |
-| `Super+J` / `Super+K` | focus next / previous window |
-| `Super+Shift+J` / `Super+Shift+K` | swap focused window next / previous |
-| `Super+Return` | zoom (promote focused window to master) |
-| `Super+H` / `Super+L` | shrink / grow the master area (`Ctrl+H/L` also works) |
+| `Super+J` / `Super+K` (or `Alt+J/K`) | focus next / previous window |
+| `Super+Shift+J` / `Super+Shift+K` (or `Alt+Shift+J/K`) | swap focused window next / previous |
+| `Super+Return` (or `Alt+Return`) | zoom (promote focused window to master) |
+| `Super+H` / `Super+L` (or `Alt+H/L`) | shrink / grow the master area |
 | `Super+Shift+H` / `Super+Shift+L` | fewer / more master windows |
 | `Super+Up` / `Super+Right` / `Super+Down` / `Super+Left` | move the master area (top / right / bottom / left) |
 | `Super+Alt+Shift+H` / `L` | resize window horizontally (− / + 100 px) |
 | `Super+Alt+Shift+J` / `K` | resize window vertically (+ / − 100 px) |
-| `Super+Q` | close the focused window |
+| `Super+Q` (or `Alt+Q`) | close the focused window |
 | `Super+Shift+Space` | toggle floating |
 | `Super+F` | toggle fullscreen |
 | `Super+Period` / `Super+Comma` | focus next / previous monitor |

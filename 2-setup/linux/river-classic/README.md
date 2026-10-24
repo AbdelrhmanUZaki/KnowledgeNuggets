@@ -155,8 +155,8 @@ The complete list — including resize, output, touchpad and kanata bindings —
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` | toggle floating |
 | `Super+F` | toggle fullscreen |
-| `Super+Return` | zoom / `Super+H/L` master ratio (`Ctrl+H/L` alias) · `Super+Shift+H/L` master count |
-| `Super+Q` | close · `Super+Shift+E` exit river |
+| `Super+Return` (or `Alt+Return`) | zoom / `Super+H/L` (or `Alt+H/L`) master ratio · `Super+Shift+H/L` master count |
+| `Super+Q` (or `Alt+Q`) | close · `Super+Shift+E` exit river |
 | `Super+Period` / `Super+Comma` | switch monitor |
 | `Alt+B` | show/hide the bar (waybar's SIGUSR1 toggle) |
 | `Print` / `Super+Shift+Print` | screenshot full / region |
