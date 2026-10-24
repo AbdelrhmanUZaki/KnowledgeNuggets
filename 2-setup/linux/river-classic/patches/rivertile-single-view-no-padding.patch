@@ -1,0 +1,79 @@
+diff --git a/rivertile/main.zig b/rivertile/main.zig
+index d665152..175fee0 100644
+--- a/rivertile/main.zig
++++ b/rivertile/main.zig
+@@ -208,13 +208,21 @@ const Output = struct {
+                 const main_count = @min(output.main_count, ev.view_count);
+                 const secondary_count = saturatingCast(u31, ev.view_count) -| main_count;
+ 
++                // A single view fills the whole output: no outer gap and no
++                // view gap.  With two or more views the configured paddings
++                // apply (outer-padding from the command line, view-padding
++                // between views).
++                const single = ev.view_count == 1;
++                const view_pad: u31 = if (single) 0 else view_padding;
++                const outer_pad: u31 = if (single) 0 else outer_padding;
++
+                 const usable_width = switch (output.main_location) {
+-                    .left, .right => saturatingCast(u31, ev.usable_width) -| (2 *| outer_padding),
+-                    .top, .bottom => saturatingCast(u31, ev.usable_height) -| (2 *| outer_padding),
++                    .left, .right => saturatingCast(u31, ev.usable_width) -| (2 *| outer_pad),
++                    .top, .bottom => saturatingCast(u31, ev.usable_height) -| (2 *| outer_pad),
+                 };
+                 const usable_height = switch (output.main_location) {
+-                    .left, .right => saturatingCast(u31, ev.usable_height) -| (2 *| outer_padding),
+-                    .top, .bottom => saturatingCast(u31, ev.usable_width) -| (2 *| outer_padding),
++                    .left, .right => saturatingCast(u31, ev.usable_height) -| (2 *| outer_pad),
++                    .top, .bottom => saturatingCast(u31, ev.usable_width) -| (2 *| outer_pad),
+                 };
+ 
+                 // to make things pixel-perfect, we make the first main and first secondary
+@@ -260,36 +268,36 @@ const Output = struct {
+                         height = secondary_height + if (i == main_count) secondary_height_rem else 0;
+                     }
+ 
+-                    x +|= view_padding;
+-                    y +|= view_padding;
+-                    width -|= 2 *| view_padding;
+-                    height -|= 2 *| view_padding;
++                    x +|= view_pad;
++                    y +|= view_pad;
++                    width -|= 2 *| view_pad;
++                    height -|= 2 *| view_pad;
+ 
+                     switch (output.main_location) {
+                         .left => layout.pushViewDimensions(
+-                            x +| outer_padding,
+-                            y +| outer_padding,
++                            x +| outer_pad,
++                            y +| outer_pad,
+                             width,
+                             height,
+                             ev.serial,
+                         ),
+                         .right => layout.pushViewDimensions(
+-                            usable_width - width - x +| outer_padding,
+-                            y +| outer_padding,
++                            usable_width - width - x +| outer_pad,
++                            y +| outer_pad,
+                             width,
+                             height,
+                             ev.serial,
+                         ),
+                         .top => layout.pushViewDimensions(
+-                            y +| outer_padding,
+-                            x +| outer_padding,
++                            y +| outer_pad,
++                            x +| outer_pad,
+                             height,
+                             width,
+                             ev.serial,
+                         ),
+                         .bottom => layout.pushViewDimensions(
+-                            y +| outer_padding,
+-                            usable_width - width - x +| outer_padding,
++                            y +| outer_pad,
++                            usable_width - width - x +| outer_pad,
+                             height,
+                             width,
+                             ev.serial,

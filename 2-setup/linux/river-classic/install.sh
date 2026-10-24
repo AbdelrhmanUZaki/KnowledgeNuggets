@@ -127,8 +127,11 @@ build_compositor() {
     https://codeberg.org/river/river-classic.git
   cd river-classic
   git fetch --tags --quiet || true
-  # our patches on top of upstream (session lock: release the session when
-  # the lock client dies -- without it a killed locker leaves a black screen)
+  # our patches on top of upstream:
+  #  * session lock: release the session when the lock client dies (without it
+  #    a killed locker leaves a black screen);
+  #  * rivertile: zero padding when a workspace has exactly one view, so a
+  #    single window is truly full-screen.
   for p in "$HERE"/patches/*.patch; do
       [ -f "$p" ] || continue
       if git apply --check "$p" 2>/dev/null; then

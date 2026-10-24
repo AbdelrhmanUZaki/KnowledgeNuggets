@@ -146,9 +146,13 @@ deliberately left free for applications.
 
 **Borders and gaps**: no gap between the windows and the screen edge; tiled
 views are separated by 12 px, with a 2 px gold border on the focused window.
-When a workspace shows a single window it is edge-to-edge with no border at
-all (`config/river/view-watcher.sh` reads river's status protocol and switches
-`border-width`/`view-padding`; stock rivertile is unchanged).
+A single window fills the whole output with no gaps and no border. The gap
+part comes from a small rivertile patch
+(`patches/rivertile-single-view-no-padding.patch`: padding 0 when the layout
+demand has exactly one view — rivertile's padding options are CLI-only, not
+runtime commands), and `config/river/view-watcher.sh` reads river's status
+protocol (`view_tags`/`focused_tags`) to switch `border-width` between 0 and
+2 as the visible view count changes.
 
 | Keys | Action |
 |---|---|

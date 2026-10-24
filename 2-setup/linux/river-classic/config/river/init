@@ -360,9 +360,10 @@ riverctl border-color-unfocused 0x3b4252
 riverctl border-color-urgent 0xff5555
 riverctl border-width 2
 rivertile -main-count 1 -outer-padding 0 -view-padding 6 &   # 1 master + stack
-# A single visible view is edge-to-edge with no border; with 2+ views the
-# watcher restores the border and gaps above. It reads river's status protocol
-# (view_tags/focused_tags) and calls riverctl, so rivertile stays stock.
+# A single visible view fills the output with no gaps (patched rivertile:
+# padding 0 when view_count == 1) and no border; with 2+ views the watcher
+# restores the 2 px border. It reads river's status protocol
+# (view_tags/focused_tags) and calls riverctl.
 VIEW_WATCHER="$HOME/.config/river/view-watcher.sh"
 if [ -x "$VIEW_WATCHER" ]; then
     "$VIEW_WATCHER" >>"$STATE_DIR/view-watcher.log" 2>&1 &

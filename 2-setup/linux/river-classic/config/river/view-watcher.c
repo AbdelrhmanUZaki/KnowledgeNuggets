@@ -5,10 +5,10 @@
 // This small client counts the views that intersect the focused tags and keeps
 // two things in sync:
 //
-//   one visible view  -> border-width 0, view-padding 0, outer-padding 0
-//                        (edge-to-edge, no gaps, no border)
-//   two or more       -> border-width 2, view-padding 6, outer-padding 0
-//                        (no gap to the screen edge, 12 px between views)
+//   one visible view  -> border-width 0  (rivertile's patch already makes the
+//                        layout edge-to-edge with no gaps)
+//   two or more       -> border-width 2  (rivertile applies 12 px view gaps and
+//                        no outer padding)
 //
 // It invokes riverctl (the same commands a user would run), so it works with
 // the stock rivertile and needs no compositor changes.
@@ -87,20 +87,13 @@ static void apply(void) {
     if (multi == last_multi)
         return;
     last_multi = multi;
-    fprintf(stderr, "view-watcher: %d visible -> border %d, view-padding %d\n",
-            n, multi ? 2 : 0, multi ? 6 : 0);
+    fprintf(stderr, "view-watcher: %d visible -> border %d\n",
+            n, multi ? 2 : 0);
 
-    if (multi) {
+    if (multi)
         run((char *const[]){ riverctl_path, "border-width", "2", NULL });
-        run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
-                             "view-padding 6", NULL });
-    } else {
+    else
         run((char *const[]){ riverctl_path, "border-width", "0", NULL });
-        run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
-                             "view-padding 0", NULL });
-    }
-    run((char *const[]){ riverctl_path, "send-layout-cmd", "rivertile",
-                         "outer-padding 0", NULL });
 }
 
 static void output_focused_tags(void *data, struct zriver_output_status_v1 *s,
