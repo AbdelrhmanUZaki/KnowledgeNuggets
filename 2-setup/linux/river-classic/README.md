@@ -216,6 +216,12 @@ main window *late* (after the server answers, which beat every
 hide-before-the-menu attempt), the eval opens the menu immediately and
 then re-hides the window every ~300 ms while the server settles, so the
 worst case is a brief flicker, not a window.
+
+`config/river/copyq-keepalive.sh` (started from init, killed by
+session-cleanup) probes the server every 15 s and restarts it **hidden**
+if it died again — cold starts are now rare and short instead of
+"until the next Super+V". To start the server by hand in the background
+(no window), run: `setsid -f ~/.local/bin/copyq --start-server`.
 CLI speed itself comes from running CopyQ from the **extracted AppDir**
 (`~/.local/opt/copyq-17.0.0`, created by `install-copyq17.sh`): every
 AppImage launch pays a FUSE mount (~0.5 s), the extracted binary starts in

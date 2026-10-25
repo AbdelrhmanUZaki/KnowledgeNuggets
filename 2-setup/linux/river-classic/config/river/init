@@ -285,6 +285,11 @@ fi
 # Use the 17.x AppImage wrapper: Ubuntu's 13.0.0 crashes restoring large images.
 if [ -x "$HOME/.local/bin/copyq" ] && [ -x "$HOME/.config/river/copyq-setup.sh" ]; then
     QT_QPA_PLATFORM=wayland "$HOME/.config/river/copyq-setup.sh" >>"$STATE_DIR/copyq.log" 2>&1 &
+    # The server dies silently now and then; keep it alive so the Super+V
+    # popup stays warm (a cold start is slower and flashes the main window).
+    if [ -x "$HOME/.config/river/copyq-keepalive.sh" ]; then
+        "$HOME/.config/river/copyq-keepalive.sh" >>"$STATE_DIR/copyq.log" 2>&1 &
+    fi
 fi
 
 # status bar — up to 3 tries, and every attempt must actually ATTACH to an output
