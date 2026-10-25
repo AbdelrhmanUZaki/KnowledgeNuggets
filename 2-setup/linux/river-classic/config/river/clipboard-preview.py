@@ -4,12 +4,14 @@
 Super+V popup over the cliphist history:
 - left pane  - searchable list; text entries show their first line, image
   entries show a thumbnail and a "WxH PNG" label;
-- right pane - large preview of the SELECTED entry: the image itself, or
-  the full text (wrapped, selectable).
+- right pane - LARGE preview of the selected entry: the image fitted to
+  the pane (click it to toggle 1:1 zoom, scrollable), or the full text
+  (wrapped, selectable).
 
-Type to filter, Up/Down to move (the preview follows the selection),
-Enter (or click) to copy the entry back to the clipboard via wl-copy
-(which then holds the selection), Esc or losing focus closes.
+Type to filter, Up/Down to move (the preview follows the selection and
+the list scrolls along), Enter (or click) to copy the entry back to the
+clipboard via wl-copy (which then holds the selection), Esc or losing
+focus closes.
 
 History comes from `cliphist list` (plain file ~/.cache/cliphist/db) -
 this process is stateless and exits right after a pick.
@@ -22,6 +24,7 @@ import io
 import os
 import subprocess
 import threading
+from collections import OrderedDict
 
 import gi
 
@@ -33,15 +36,20 @@ from gi.repository import Graphene  # noqa: E402
 from PIL import Image  # noqa: E402
 
 APP_ID = "org.riverclassic.Clippick"
-THUMB = 52            # list thumbnail size in px (rendered 2x for hidpi)
-PREVIEW_MAX = (400, 540)  # large preview fits inside this box
-MAX_ENTRIES = 200     # render at most this many rows
+THUMB = 52                 # list thumbnail size in px (rendered 2x for hidpi)
+WINDOW = (1460, 920)       # popup size (fits a 1600x1000 screen)
+LIST_WIDTH = 430           # fixed width of the list pane
+PREVIEW_MAX = (940, 780)   # "fit" preview box inside the right pane
+FULL_CACHE_MAX = 6         # 1:1 images kept in memory (they are big)
+MAX_ENTRIES = 200          # render at most this many rows
 
-BG = "#1e1e2e"        # catppuccin-ish dark palette
+BG = "#1e1e2e"             # catppuccin-ish dark palette
 BG_ALT = "#313244"
 BG_SEL = "#45475a"
 FG = "#cdd6f4"
 FG_BRIGHT = "#ffffff"
+FG_DIM = "#8f9ac2"
+ACCENT = "#89b4fa"
 
 CSS = f"""
 window, window.background {{
@@ -68,7 +76,8 @@ row:hover {{ background-color: #3b3d52; }}
 row:selected {{ background-color: {BG_SEL}; }}
 row:selected label {{ color: {FG_BRIGHT}; }}
 label {{ color: {FG}; }}
-.preview-meta {{ color: #8f9ac2; font-size: 13px; }}
+.preview-meta {{ color: {FG_DIM}; font-size: 13px; }}
+.preview-hint {{ color: {ACCENT}; font-size: 12px; }}
 .preview-text {{ color: {FG}; font-size: 14px; }}
 """
 
@@ -103,7 +112,7 @@ def decode(line: str) -> bytes:
 
 
 def png_bytes(data: bytes, box=None) -> bytes:
-    """Decode image data and re-encode downscaled to fit `box` (w, h)."""
+    """Decode image data and re-encode, downscaled to fit `box` (w, h)."""
     img = Image.open(io.BytesIO(data))
     if box:
         img.thumbnail(box)
@@ -118,14 +127,17 @@ class Picker(Gtk.Application):
         self.win = None
         self.rows = []            # [(listbox_row, line), ...]
         self.was_active = False
-        self.preview_cache = {}   # line -> PNG bytes (large preview)
+        self.fit_cache = {}       # line -> PNG bytes (fit-to-pane preview)
+        self.full_cache = OrderedDict()  # line -> PNG bytes (1:1, LRU)
+        self.zoom_full = {}       # line -> bool (per-entry zoom state)
+        self.zoomed_line = None   # line currently shown 1:1
 
     # ---- skeleton --------------------------------------------------------
     def do_activate(self):  # noqa: N802
         Gtk.Settings.get_default().props.gtk_application_prefer_dark_theme = True
 
         self.win = Gtk.ApplicationWindow(application=self)
-        self.win.set_default_size(1020, 600)
+        self.win.set_default_size(*WINDOW)
         self.win.set_decorated(False)
         self.win.connect("notify::is-active", self.on_active_changed)
 
@@ -137,7 +149,7 @@ class Picker(Gtk.Application):
 
         # --- left: search + list ---
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        left.set_size_request(560, -1)
+        left.set_size_request(LIST_WIDTH, -1)
 
         self.search = Gtk.SearchEntry()
         self.search.set_placeholder_text("Type to search the clipboard…")
@@ -154,11 +166,10 @@ class Picker(Gtk.Application):
         left.append(self.scroll)
         outer.append(left)
 
-        # --- right: large preview of the selected entry ---
+        # --- right: LARGE preview of the selected entry ---
         self.preview_area = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL, spacing=8, hexpand=True
+            orientation=Gtk.Orientation.VERTICAL, spacing=6, hexpand=True
         )
-        self.preview_area.set_size_request(400, -1)
         outer.append(self.preview_area)
 
         self.win.set_child(outer)
@@ -204,9 +215,8 @@ class Picker(Gtk.Application):
             ).start()
 
     def thumb_worker(self, icon, line):
-        """Small thumbnail for the list (PNG bytes made off-thread, the
-        Gdk.Texture is created on the UI thread - GDK objects are not
-        safe to build off it)."""
+        """Small thumbnail for the list (PNG bytes off-thread, texture on
+        the UI thread - GDK objects are not safe to build off it)."""
         try:
             data = png_bytes(decode(line), box=(THUMB * 2, THUMB * 2))
             GLib.idle_add(
@@ -265,9 +275,27 @@ class Picker(Gtk.Application):
 
         if is_image(line):
             holder = Gtk.Image(hexpand=True, vexpand=True)
-            self.preview_area.append(holder)
+            holder.set_halign(Gtk.Align.CENTER)
+            holder.set_valign(Gtk.Align.CENTER)
+            scroll = Gtk.ScrolledWindow()
+            scroll.set_child(holder)
+            scroll.set_vexpand(True)
+            scroll.set_hexpand(True)
+            self.preview_area.append(scroll)
+
+            click = Gtk.GestureClick()
+            click.connect("released", lambda *_a: self.toggle_zoom(line))
+            holder.add_controller(click)
+
+            hint = Gtk.Label(label="click the image to toggle 1:1 zoom")
+            hint.add_css_class("preview-hint")
+            self.preview_area.append(hint)
+
+            self.zoomed_line = line if self.zoom_full.get(line) else None
             threading.Thread(
-                target=self.preview_worker, args=(holder, line), daemon=True
+                target=self.preview_worker,
+                args=(holder, line, bool(self.zoom_full.get(line))),
+                daemon=True,
             ).start()
         else:
             text = Gtk.Label(label=line.split("\t", 1)[-1])
@@ -281,14 +309,26 @@ class Picker(Gtk.Application):
             scroll.set_vexpand(True)
             self.preview_area.append(scroll)
 
-    def preview_worker(self, holder, line):
-        """Large preview image, cached per entry (texture built on the
-        UI thread)."""
+    def toggle_zoom(self, line):
+        self.zoom_full[line] = not self.zoom_full.get(line, False)
+        self.show_preview(line)  # rebuild the pane in the new mode
+
+    def preview_worker(self, holder, line, full):
+        """Large preview image, cached per entry and size mode (texture
+        built on the UI thread)."""
         try:
-            data = self.preview_cache.get(line)
-            if data is None:
-                data = png_bytes(decode(line), box=PREVIEW_MAX)
-                self.preview_cache[line] = data
+            if full:
+                data = self.full_cache.get(line)
+                if data is None:
+                    data = png_bytes(decode(line))  # native resolution
+                    self.full_cache[line] = data
+                    while len(self.full_cache) > FULL_CACHE_MAX:
+                        self.full_cache.popitem(last=False)
+            else:
+                data = self.fit_cache.get(line)
+                if data is None:
+                    data = png_bytes(decode(line), box=PREVIEW_MAX)
+                    self.fit_cache[line] = data
             GLib.idle_add(
                 lambda d=data, h=holder: h.set_from_paintable(
                     Gdk.Texture.new_from_bytes(GLib.Bytes.new(d))
@@ -296,8 +336,8 @@ class Picker(Gtk.Application):
                 or False
             )
         except Exception as e:
-            msg = f"preview failed: {e}"
             self.log_error("preview", e)
+            msg = f"preview failed: {e}"
             GLib.idle_add(
                 lambda m=msg, h=holder: h.set_from_icon_name(
                     "image-missing-symbolic"

@@ -197,17 +197,20 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 ### Clipboard
 
 `Super+V` (or `Alt+V`) opens the **clipboard picker** over the **cliphist**
-history — text **and images**, searched, newest first. It is a small GTK4
-window (`config/river/clipboard-preview.py`, floated by a river rule) with
-two panes: the left one lists entries (text as its first line, images with
-a thumbnail), the right one shows a **large preview of the selected
-entry** — the image itself, or the full text, wrapped. Type to filter,
-Up/Down to move (the preview follows), Enter or click to copy and close,
-Esc (or clicking away) to dismiss. Dark styling is forced
-(`gtk-application-prefer-dark-theme` + explicit CSS on every node).
-Pasting in the target app is `Ctrl+V` — Wayland compositors cannot inject
-the paste for us. Cold open is ~0.4 s (Python + GTK import); if GTK4 is
-ever unavailable, `clipboard-pick.sh` falls back
+history — text **and images**, searched, newest first. It is a GTK4
+window (`config/river/clipboard-preview.py`, floated by a river rule,
+1460×920) with two panes: a narrow searchable list on the left (text as
+its first line, images with a thumbnail) and a **large preview on the
+right** — the image fitted to ~940 px, **click it to toggle 1:1 zoom**
+(native resolution, scroll/pan with the wheel; a small LRU keeps up to 6
+zoomed images in memory), or the full text, wrapped and selectable. Type
+to filter, Up/Down to move (the preview follows and the list scrolls
+along), Enter or click to copy and close, Esc (or clicking away) to
+dismiss. Dark styling is forced (`gtk-application-prefer-dark-theme` +
+explicit CSS on every node). Pasting in the target app is `Ctrl+V` —
+Wayland compositors cannot inject the paste for us. Cold open is ~0.4 s
+(Python + GTK import); if GTK4 is ever unavailable, `clipboard-pick.sh`
+falls back
 to a plain fuzzel text picker.
 
 Why cliphist (replacing CopyQ as the daily driver): **no server, no
