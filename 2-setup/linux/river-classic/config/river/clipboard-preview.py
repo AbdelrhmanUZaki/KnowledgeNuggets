@@ -27,7 +27,9 @@ import gi
 
 gi.require_version("Gdk", "4.0")
 gi.require_version("Gtk", "4.0")
+gi.require_version("Graphene", "1.0")
 from gi.repository import Gdk, GLib, Gtk, Pango  # noqa: E402
+from gi.repository import Graphene  # noqa: E402
 from PIL import Image  # noqa: E402
 
 APP_ID = "org.riverclassic.Clippick"
@@ -146,11 +148,10 @@ class Picker(Gtk.Application):
         self.listbox = Gtk.ListBox()
         self.listbox.set_activate_on_single_click(True)
         self.listbox.connect("row-activated", self.on_row_activated)
-        self.listbox.connect("notify::selected-row", self.on_selection_changed)
-        scroll = Gtk.ScrolledWindow()
-        scroll.set_child(self.listbox)
-        scroll.set_vexpand(True)
-        left.append(scroll)
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_child(self.listbox)
+        self.scroll.set_vexpand(True)
+        left.append(self.scroll)
         outer.append(left)
 
         # --- right: large preview of the selected entry ---
@@ -203,23 +204,51 @@ class Picker(Gtk.Application):
             ).start()
 
     def thumb_worker(self, icon, line):
-        """Small thumbnail for the list, decoded off the UI thread."""
+        """Small thumbnail for the list (PNG bytes made off-thread, the
+        Gdk.Texture is created on the UI thread - GDK objects are not
+        safe to build off it)."""
         try:
             data = png_bytes(decode(line), box=(THUMB * 2, THUMB * 2))
-            texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
             GLib.idle_add(
-                lambda t=texture, icon=icon: icon.set_from_paintable(t) or False
+                lambda d=data, i=icon: i.set_from_paintable(
+                    Gdk.Texture.new_from_bytes(GLib.Bytes.new(d))
+                )
+                or False
             )
-        except Exception:
-            pass
+        except Exception as e:
+            self.log_error("thumb", e)
 
     # ---- preview pane ----------------------------------------------------
-    def on_selection_changed(self, *_args):
-        row = self.listbox.get_selected_row()
-        if row is None:
-            return
-        line = next(l for r, l in self.rows if r == row)
-        self.show_preview(line)
+    def line_for(self, row):
+        return next(l for r, l in self.rows if r == row)
+
+    def select_row(self, row):
+        """Select a row, refresh the preview and keep it scrolled into view.
+
+        Called explicitly from startup/filter/keyboard so the preview never
+        depends on property notifications firing.
+        """
+        self.listbox.select_row(row)
+        self.show_preview(self.line_for(row))
+        GLib.idle_add(self.scroll_row_into_view, row)
+
+    def scroll_row_into_view(self, row):
+        """Minimal-scroll the list so `row` is visible (GTK 4.22 has no
+        ListBox scroll API, so the vadjustment is driven by hand)."""
+        try:
+            ok, pt = row.compute_point(self.listbox, Graphene.Point(x=0.0, y=0.0))
+            if not ok:
+                return False
+            y, h = pt.y, max(row.get_allocation().height, 1)
+            adj = self.scroll.get_vadjustment()
+            top, page = adj.get_value(), adj.get_page_size()
+            if y < top:
+                adj.set_value(max(0.0, y - 8))
+            elif y + h > top + page:
+                adj.set_value(min(adj.get_upper() - page, y + h - page + 8))
+        except Exception:
+            pass
+        return False
 
     def clear_preview(self):
         while True:
@@ -253,17 +282,37 @@ class Picker(Gtk.Application):
             self.preview_area.append(scroll)
 
     def preview_worker(self, holder, line):
-        """Large preview image, cached per entry."""
+        """Large preview image, cached per entry (texture built on the
+        UI thread)."""
         try:
             data = self.preview_cache.get(line)
             if data is None:
                 data = png_bytes(decode(line), box=PREVIEW_MAX)
                 self.preview_cache[line] = data
-            texture = Gdk.Texture.new_from_bytes(GLib.Bytes.new(data))
             GLib.idle_add(
-                lambda t=texture, h=holder: h.set_from_paintable(t) or False
+                lambda d=data, h=holder: h.set_from_paintable(
+                    Gdk.Texture.new_from_bytes(GLib.Bytes.new(d))
+                )
+                or False
             )
-        except Exception:
+        except Exception as e:
+            msg = f"preview failed: {e}"
+            self.log_error("preview", e)
+            GLib.idle_add(
+                lambda m=msg, h=holder: h.set_from_icon_name(
+                    "image-missing-symbolic"
+                )
+                or h.set_tooltip_text(m)
+                or False
+            )
+
+    def log_error(self, where, exc):
+        try:
+            state = os.path.expanduser("~/.local/state/river-classic")
+            os.makedirs(state, exist_ok=True)
+            with open(os.path.join(state, "clipboard-preview.log"), "a") as fh:
+                fh.write(f"{where}: {exc!r}\n")
+        except OSError:
             pass
 
     # ---- behaviour -------------------------------------------------------
@@ -279,7 +328,7 @@ class Picker(Gtk.Application):
     def select_first_visible(self):
         vis = self.visible_rows()
         if vis:
-            self.listbox.select_row(vis[0][0])
+            self.select_row(vis[0][0])
 
     def on_search_changed(self, _entry):
         needle = self.search.get_text().casefold()
@@ -300,7 +349,7 @@ class Picker(Gtk.Application):
             cur = self.listbox.get_selected_row()
             idx = next((i for i, (r, _) in enumerate(vis) if r == cur), 0)
             idx = max(0, min(len(vis) - 1, idx + (1 if keyval == Gdk.KEY_Down else -1)))
-            self.listbox.select_row(vis[idx][0])
+            self.select_row(vis[idx][0])
             return True
         if keyval == Gdk.KEY_Escape:
             self.quit()

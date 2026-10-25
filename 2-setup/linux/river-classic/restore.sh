@@ -32,6 +32,12 @@ link() {
 
 echo "== river-classic config =="
 link "$HERE/config/river" "$HOME/.config/river"
+link_file() { # link one file into an existing dir (used for fuzzel.ini)
+    mkdir -p "$(dirname "$2")"
+    [ -e "$2" ] && [ ! -L "$2" ] && mv "$2" "$2.bak"
+    ln -sf "$1" "$2"
+}
+link_file "$HERE/config/fuzzel/fuzzel.ini" "$HOME/.config/fuzzel/fuzzel.ini"
 link "$HERE/config/waybar" "$HOME/.config/waybar"
 link "$HERE/config/foot" "$HOME/.config/foot"
 link "$HERE/config/dunst" "$HOME/.config/dunst"
