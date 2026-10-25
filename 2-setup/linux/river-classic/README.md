@@ -209,10 +209,15 @@ an item with Enter or double-click; CopyQ copies it, closes the window and
 returns focus to the previous app. There is no tray icon and no notification;
 the panel's clipboard button opens the same window.
 
-The popup is produced by `config/river/clipboard-menu.sh` (CopyQ's scripting
-`menu("&clipboard", 12)`). The wrapper also restarts the server if it died -
-the CopyQ server has been observed to exit silently in this session - and
-hides the main window a fresh start restores before opening the menu.
+The popup is produced by `config/river/clipboard-menu.sh`: a **single**
+CopyQ round-trip (`eval "if (visible()) hide(); menu(...)"` — ~0.13 s warm)
+that also hides the main window a fresh server start restores, and
+self-heals the server if it died (`--start-server`; the CopyQ server has
+been observed to exit silently in this session — a cold start costs ~0.5 s).
+CLI speed itself comes from running CopyQ from the **extracted AppDir**
+(`~/.local/opt/copyq-17.0.0`, created by `install-copyq17.sh`): every
+AppImage launch pays a FUSE mount (~0.5 s), the extracted binary starts in
+~0.1 s, which is what makes the popup feel instant.
 
 CopyQ is a Qt app using Qt's light default style. For the full window,
 `Super+Shift+Space` toggles floating if you prefer a separate window; the

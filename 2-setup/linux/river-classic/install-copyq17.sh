@@ -39,9 +39,22 @@ else
     trap - EXIT HUP INT TERM
 fi
 
+# Extract the AppImage: every AppImage launch pays a FUSE mount (~0.4 s),
+# which made the clipboard popup take ~1.5 s.  The extracted AppDir runs the
+# same binary with the same libs in ~0.1 s per CLI call.
+APPDIR="$HOME/.local/opt/copyq-$VERSION"
+if [ ! -x "$APPDIR/AppRun" ]; then
+    log "extracting AppImage to $APPDIR…"
+    rm -rf "$APPDIR"
+    (cd "$(dirname "$APPIMAGE")" && "$(basename "$APPIMAGE")" --appimage-extract >/dev/null)
+    mv "$(dirname "$APPIMAGE")/squashfs-root" "$APPDIR"
+fi
+
 # The wrapper must win over /usr/bin/copyq (the broken 13.0.0 package) for
 # interactive shells; river's keybind/panel use the absolute path explicitly.
-printf '#!/bin/sh\nexec "%s" "$@"\n' "$APPIMAGE" > "$WRAPPER"
+# It prefers the extracted AppDir and falls back to the AppImage.
+printf '#!/bin/sh\nAPPDIR="%s"\nAPPIMAGE="%s"\n[ -x "$APPDIR/AppRun" ] && exec "$APPDIR/AppRun" "$@"\nexec "$APPIMAGE" "$@"\n' \
+    "$APPDIR" "$APPIMAGE" > "$WRAPPER"
 chmod +x "$WRAPPER"
 
 "$WRAPPER" --version | head -n 1

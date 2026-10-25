@@ -6,9 +6,10 @@
 #
 # Use Super+Shift+V for the full CopyQ window (images, pins, editing, tabs).
 #
-# The CopyQ server occasionally dies silently in this session; --start-server
-# below makes every invocation self-healing.  A fresh server start restores
-# the main window, so it is hidden again before the menu opens.
+# ONE copyq round-trip: the eval hides the main window a fresh server start
+# restores, then opens the menu.  --start-server self-heals a dead server
+# (the CopyQ server has been observed to exit silently in this session);
+# that cold path costs a second or two, the warm path ~0.15 s.
 # RIVER_CLIPBOARD_ITEMS overrides the number of entries shown (default 12).
 set -u
 
@@ -22,18 +23,4 @@ fi
 
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
 
-# Start the server if it is down.  Detach with setsid so the server survives
-# even when this wrapper is started from a short-lived shell.
-if ! "$COPYQ" count >/dev/null 2>&1; then
-    setsid -f "$COPYQ" --start-server >/dev/null 2>&1
-    i=0
-    until "$COPYQ" count >/dev/null 2>&1; do
-        i=$((i + 1))
-        [ "$i" -ge 40 ] && exit 0
-        sleep 0.25
-    done
-    # A freshly started server restores the main window - hide it again.
-    "$COPYQ" hide >/dev/null 2>&1
-fi
-
-exec "$COPYQ" eval "menu(\"&clipboard\", $COUNT)"
+exec "$COPYQ" --start-server eval "if (visible()) hide(); menu(\"&clipboard\", $COUNT)"
