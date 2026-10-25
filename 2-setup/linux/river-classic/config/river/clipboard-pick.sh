@@ -1,14 +1,22 @@
 #!/bin/sh
-# Super+V clipboard popup: cliphist history, fuzzy-searched with fuzzel.
+# Super+V clipboard popup: cliphist history, fuzzy/substring search.
 #
-# Text and images.  Picking an item copies it back to the clipboard
-# (wl-copy then holds the selection in the background, so it also survives
-# this script and the source app exiting).  Paste in the target app with
-# Ctrl+V - Wayland compositors cannot inject the paste for us.
+# Prefers the GTK4 picker (config/river/clipboard-preview.py), which shows a
+# real thumbnail for image entries; falls back to the plain fuzzel text
+# picker if GTK4/PyGObject is unavailable.  Both copy the picked entry back
+# to the clipboard with wl-copy (which forks and holds the selection).
+# Paste with Ctrl+V - Wayland compositors cannot inject the paste for us.
 #
-# The full CopyQ manager stays available on Super+Shift+V (pins, editing,
-# image previews); nothing CopyQ runs in the background anymore.
+# The full CopyQ manager stays available on Super+Shift+V (pins, editing);
+# nothing CopyQ runs in the background.
 set -u
+
+DIR=${0%/*}
+
+if command -v python3 >/dev/null 2>&1 && [ -r "$DIR/clipboard-preview.py" ]; then
+    python3 "$DIR/clipboard-preview.py" && exit 0
+    # GTK4 missing or the picker crashed: fall through to fuzzel.
+fi
 
 SEL=$(cliphist list 2>/dev/null | fuzzel --dmenu -p ' 📋 ' -l 14)
 [ -n "$SEL" ] || exit 0
