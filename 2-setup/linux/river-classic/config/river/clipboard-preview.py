@@ -4,9 +4,9 @@
 Super+V popup over the cliphist history:
 - left pane  - searchable list; text entries show their first line, image
   entries show a thumbnail and a "WxH PNG" label;
-- right pane - LARGE preview of the selected entry: the image fitted to
-  the pane (click it to toggle 1:1 zoom, scrollable), or the full text
-  (wrapped, selectable).
+- right pane - LARGE preview of the selected entry: the image scaled by
+  the widget to FILL the pane (Gtk.Picture with ContentFit.CONTAIN -
+  any size source), or the full text (wrapped, selectable).
 
 Type to filter, Up/Down to move (the preview follows the selection and
 the list scrolls along), Enter (or click) to copy the entry back to the
@@ -24,7 +24,6 @@ import io
 import os
 import subprocess
 import threading
-from collections import OrderedDict
 
 import gi
 
@@ -39,8 +38,6 @@ APP_ID = "org.riverclassic.Clippick"
 THUMB = 52                 # list thumbnail size in px (rendered 2x for hidpi)
 WINDOW = (1460, 920)       # popup size (fits a 1600x1000 screen)
 LIST_WIDTH = 430           # fixed width of the list pane
-PREVIEW_MAX = (940, 780)   # "fit" preview box inside the right pane
-FULL_CACHE_MAX = 6         # 1:1 images kept in memory (they are big)
 MAX_ENTRIES = 200          # render at most this many rows
 
 BG = "#1e1e2e"             # catppuccin-ish dark palette
@@ -142,10 +139,7 @@ class Picker(Gtk.Application):
         self.win = None
         self.rows = []            # [(listbox_row, line), ...]
         self.was_active = False
-        self.fit_cache = {}       # line -> PNG bytes (fit-to-pane preview)
-        self.full_cache = OrderedDict()  # line -> PNG bytes (1:1, LRU)
-        self.zoom_full = {}       # line -> bool (per-entry zoom state)
-        self.zoomed_line = None   # line currently shown 1:1
+        self.fit_cache = {}       # line -> raw PNG bytes (decoded entry)
 
     # ---- skeleton --------------------------------------------------------
     def do_activate(self):  # noqa: N802
@@ -289,28 +283,22 @@ class Picker(Gtk.Application):
         self.preview_area.append(meta)
 
         if is_image(line):
-            holder = Gtk.Image(hexpand=True, vexpand=True)
-            holder.set_halign(Gtk.Align.CENTER)
-            holder.set_valign(Gtk.Align.CENTER)
+            # Gtk.Picture (not Gtk.Image): it scales the paintable to the
+            # widget allocation in BOTH directions, so any image - tiny or
+            # huge - fills the pane. Gtk.Image renders at native size and
+            # showed small images as a small block.
+            holder = Gtk.Picture()
+            holder.set_content_fit(Gtk.ContentFit.CONTAIN)
+            holder.set_can_shrink(True)
+            holder.set_hexpand(True)
+            holder.set_vexpand(True)
             scroll = Gtk.ScrolledWindow()
             scroll.set_child(holder)
             scroll.set_vexpand(True)
             scroll.set_hexpand(True)
             self.preview_area.append(scroll)
-
-            click = Gtk.GestureClick()
-            click.connect("released", lambda *_a: self.toggle_zoom(line))
-            holder.add_controller(click)
-
-            hint = Gtk.Label(label="click the image to toggle 1:1 zoom")
-            hint.add_css_class("preview-hint")
-            self.preview_area.append(hint)
-
-            self.zoomed_line = line if self.zoom_full.get(line) else None
             threading.Thread(
-                target=self.preview_worker,
-                args=(holder, line, bool(self.zoom_full.get(line))),
-                daemon=True,
+                target=self.preview_worker, args=(holder, line), daemon=True
             ).start()
         else:
             # Full decoded text (cliphist list lines only carry the FIRST
@@ -347,28 +335,18 @@ class Picker(Gtk.Application):
         except Exception as e:
             self.log_error("text-preview", e)
 
-    def toggle_zoom(self, line):
-        self.zoom_full[line] = not self.zoom_full.get(line, False)
-        self.show_preview(line)  # rebuild the pane in the new mode
-
-    def preview_worker(self, holder, line, full):
-        """Large preview image, cached per entry and size mode (texture
-        built on the UI thread)."""
+    def preview_worker(self, holder, line):
+        """Raw decoded image (texture built on the UI thread); the Picture
+        widget itself scales it to fill the pane, so no PIL resizing here."""
         try:
-            if full:
-                data = self.full_cache.get(line)
-                if data is None:
-                    data = png_bytes(decode(line))  # native resolution
-                    self.full_cache[line] = data
-                    while len(self.full_cache) > FULL_CACHE_MAX:
-                        self.full_cache.popitem(last=False)
-            else:
-                data = self.fit_cache.get(line)
-                if data is None:
-                    data = png_bytes(decode(line), box=PREVIEW_MAX)
-                    self.fit_cache[line] = data
+            data = self.fit_cache.get(line)
+            if data is None:
+                data = decode(line)
+                self.fit_cache[line] = data
+                while len(self.fit_cache) > 12:
+                    self.fit_cache.pop(next(iter(self.fit_cache)))
             GLib.idle_add(
-                lambda d=data, h=holder: h.set_from_paintable(
+                lambda d=data, h=holder: h.set_paintable(
                     Gdk.Texture.new_from_bytes(GLib.Bytes.new(d))
                 )
                 or False
