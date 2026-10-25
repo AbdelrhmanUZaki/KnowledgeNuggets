@@ -79,7 +79,7 @@ map_us() {
 
 # ---- launcher / terminal -----------------------------------------------------
 map_us normal Super P spawn fuzzel
-map_us normal Super V spawn "$HOME/.config/river/clipboard-menu.sh"   # clipboard popup (last 12, type to search)
+map_us normal Super V spawn "$HOME/.config/river/clipboard-pick.sh"   # clipboard popup (fuzzel over cliphist: text+images, fuzzy search)
 map_us normal Super+Shift V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # full CopyQ window
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
@@ -147,7 +147,7 @@ riverctl map normal Alt+Shift Period send-to-output next
 riverctl map normal Alt+Shift Comma send-to-output previous
 riverctl map normal Alt Escape spawn "$HOME/.config/river/lock-session.sh"
 map_us normal Alt P spawn fuzzel
-map_us normal Alt V spawn "$HOME/.config/river/clipboard-menu.sh"
+map_us normal Alt V spawn "$HOME/.config/river/clipboard-pick.sh"
 map_us normal Alt+Shift V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"
 riverctl map normal Alt+Shift Print spawn "$HOME/.config/river/screenshot.sh"
 map_us normal Alt+Control+Shift H resize horizontal -100
@@ -277,19 +277,13 @@ else
         "$(date '+%F %T')" >>"$STATE_DIR/input-session.log"
 fi
 
-# ---- clipboard manager (CopyQ 17): Super+V -------------------------------------
-# CopyQ reads/writes the Wayland clipboard natively (wlr-data-control).  The
-# automatic command in copyq-keep.js re-owns every new selection, so text and
-# large images survive the source app closing; copy(item) marks it CopyQ-owned
-# so the command cannot loop.  setup.sh also applies the window/paste settings.
-# Use the 17.x AppImage wrapper: Ubuntu's 13.0.0 crashes restoring large images.
-if [ -x "$HOME/.local/bin/copyq" ] && [ -x "$HOME/.config/river/copyq-setup.sh" ]; then
-    QT_QPA_PLATFORM=wayland "$HOME/.config/river/copyq-setup.sh" >>"$STATE_DIR/copyq.log" 2>&1 &
-    # The server dies silently now and then; keep it alive so the Super+V
-    # popup stays warm (a cold start is slower and flashes the main window).
-    if [ -x "$HOME/.config/river/copyq-keepalive.sh" ]; then
-        "$HOME/.config/river/copyq-keepalive.sh" >>"$STATE_DIR/copyq.log" 2>&1 &
-    fi
+# ---- clipboard history (cliphist: plain file, no server, no window) ----------
+# Two wl-paste watchers (text + PNG) feed ~/.cache/cliphist/db; a small
+# supervisor restarts a watcher if it ever dies.  Super+V picks from it via
+# fuzzel (clipboard-pick.sh).  CopyQ is NOT started at login anymore - it is
+# only launched on demand by Super+Shift+V (full manager: pins, editing).
+if [ -x "$HOME/.config/river/clipboard-store.sh" ]; then
+    "$HOME/.config/river/clipboard-store.sh" >>"$STATE_DIR/clipboard-store.log" 2>&1 &
 fi
 
 # status bar — up to 3 tries, and every attempt must actually ATTACH to an output

@@ -34,7 +34,7 @@ APT_PACKAGES=(
   libnotify-bin psmisc
   # screen capture (wl-copy for screenshots); CopyQ is the 17.x AppImage,
   # installed by install-copyq17.sh — the distro's 13.0.0 crashes on Wayland
-  grim slurp wl-clipboard
+  grim slurp wl-clipboard cliphist
   # CopyQ AppImage: download + FUSE mount
   curl fuse3
   # system panel / desktop integration

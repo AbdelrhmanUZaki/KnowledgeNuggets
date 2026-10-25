@@ -170,7 +170,7 @@ protocol (`view_tags`/`focused_tags`) to switch `border-width` between 0 and
 | `Super+Return` | terminal (Ptyxis, always a new window) |
 | `Super+Shift+Return` | terminal (foot) |
 | `Super+P` / `Alt+P` | launcher (fuzzel) · `Alt+I` = Brave · `Alt+Z` = ZCode |
-| `Super+V` / `Alt+V` | clipboard popup (CopyQ 17: last 12, type to search) · `Super+Shift+V` full manager |
+| `Super+V` / `Alt+V` | clipboard popup (fuzzel + cliphist: text and images, fuzzy search) · `Super+Shift+V` full CopyQ manager |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
 | `Super+F` / `Alt+Shift+F` | toggle fullscreen |
@@ -196,60 +196,29 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 
 ### Clipboard
 
-`Super+V` (or `Alt+V`) opens the **clipboard popup**: CopyQ's compact item
-menu at the mouse cursor with the last 12 entries and type-to-search. Pick an
-item with the arrows/number keys/Enter (or click); CopyQ copies it, closes the
-popup and returns focus to the previous app, where you paste with `Ctrl+V`.
-CopyQ cannot inject the paste itself under river/Wayland (it cannot identify
-the target window), so `Ctrl+V` after selecting is the one extra keystroke.
+`Super+V` (or `Alt+V`) opens the **clipboard popup**: a fuzzel window over
+the **cliphist** history — text **and images**, fuzzy-searched, newest
+first. Type to filter, arrows/Enter (or click) to pick; the item is copied
+to the clipboard and the popup closes. Paste in the target app with
+`Ctrl+V` (Wayland compositors cannot inject the paste for us).
 
-`Super+Shift+V` (or `Alt+Shift+V`) toggles the **full CopyQ 17** window:
-searchable history (newest first), text, images, pinned items and tags. Select
-an item with Enter or double-click; CopyQ copies it, closes the window and
-returns focus to the previous app. There is no tray icon and no notification;
-the panel's clipboard button opens the same window.
+Why cliphist (replacing CopyQ as the daily driver): **no server, no
+window, no state** — two tiny `wl-paste --watch cliphist store` watchers
+(one for `text/plain`, one for `image/png`) append to a plain file,
+`~/.cache/cliphist/db`. Nothing can crash, nothing can pop a window at
+login, and editing the picker never affects recording. `config/river/
+clipboard-store.sh` is a small idempotent supervisor (started from init,
+killed by session-cleanup) that restarts a watcher if it ever dies;
+`config/river/clipboard-pick.sh` is the Super+V picker. Image entries
+show as `[[ binary data … png WxH ]]` in the list and paste back
+byte-identical (verified). Picking an item runs `wl-copy`, which forks
+and holds the selection, so it survives this script and the source app.
 
-The popup is produced by `config/river/clipboard-menu.sh`: one CopyQ
-round-trip (~0.2 s warm path). If the server died (it does, silently),
-the wrapper restarts it headless first — **a bare `copyq --start-server`
-launches the app with its window visible** (that was the "popup also
-shows the CopyQ window" bug, and the window at login), so every start
-uses `--start-server count`, which runs the same server with no window.
-
-`config/river/copyq-keepalive.sh` (started from init, killed by
-session-cleanup) probes the server every 15 s and restarts it headless
-if it died again, so cold starts are rare and short instead of "until
-the next Super+V". To start the server by hand in the background (no
-window), run: `setsid -f ~/.local/bin/copyq --start-server count`.
-CLI speed itself comes from running CopyQ from the **extracted AppDir**
-(`~/.local/opt/copyq-17.0.0`, created by `install-copyq17.sh`): every
-AppImage launch pays a FUSE mount (~0.5 s), the extracted binary starts in
-~0.1 s, which is what makes the popup feel instant.
-
-CopyQ is a Qt app using Qt's light default style. For the full window,
-`Super+Shift+Space` toggles floating if you prefer a separate window; the
-clipboard behavior is unaffected.
-
-**Persistence:** Wayland normally drops a selection when the app that owns it
-exits. CopyQ's monitor stores the history, but storing alone does not keep the
-selection alive. `copyq-keep.js` installs a CopyQ automatic command that re-owns
-every new selection through `copy(item)`; CopyQ then owns it until the next
-copy, so text and images survive the source closing. The re-copy marks the item
-`application/x-copyq-owner` and the command aborts on that marker, so it cannot
-loop. It keeps all non-image MIME types plus one image type, avoiding Qt's
-synthetic image-conversion explosion. Verified with text and several 1920×1200
-PNGs: source killed → `wl-paste` / `wl-paste --type image` still return the
-content, and restoring the image from history does not crash the server.
-
-Use **CopyQ 17** (`~/.local/bin/copyq`), not Ubuntu's 13.0.0: 13 reads the
-Wayland clipboard and stores images, but crashes when restoring large images
-after the first one (Qt 6.10/river). `./install.sh copyq` installs the 17.0.0
-AppImage with a pinned SHA-512 (`install-copyq17.sh`). CopyQ keeps its data in
-`~/.local/share/copyq`; v17 migrated the old v13 profile on first run. The
-window/paste settings are applied at login by `copyq-setup.sh`. Images are
-re-encoded by Qt on restore (the 1×1 test PNG went 70 → 91 bytes; screenshots
-keep their dimensions), so the visual content is preserved, not necessarily the
-original bytes.
+`Super+Shift+V` (or `Alt+Shift+V`) still opens the **full CopyQ 17**
+manager (pins, tags, editing, image previews) — on demand only; nothing
+CopyQ runs in the background anymore (no login start, no keepalive).
+`copyq-setup.sh` can be re-run manually if its settings ever need to be
+re-applied.
 
 Everything copied is in the history, **passwords included**. Delete sensitive
 items in the CopyQ window (select + Delete); clearing all:

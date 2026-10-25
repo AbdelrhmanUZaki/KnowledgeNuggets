@@ -98,11 +98,13 @@ if [ -x "$HOME/.local/bin/copyq" ] &&
     timeout 2 "$HOME/.local/bin/copyq" exit >/dev/null 2>&1 || true
 fi
 pkill -x copyq 2>/dev/null || true
-# The extracted-AppDir server runs as AppRun.wrapped, and the keepalive
-# loop must die with the session too.
+# The extracted-AppDir server runs as AppRun.wrapped.
 pkill -f "$HOME/.local/opt/copyq-1[7].*/AppRun" 2>/dev/null || true
-pkill -f "$HOME/.config/river/copyq-keepalive.sh" 2>/dev/null || true
-rm -f "${XDG_STATE_HOME:-$HOME/.local/state}/river-classic/copyq-keepalive.pid" 2>/dev/null || true
+# cliphist clipboard history: the supervisor and its wl-paste watchers.
+pkill -f "$HOME/.config/river/clipboard-store.sh" 2>/dev/null || true
+pkill -x wl-paste 2>/dev/null || true
+pkill -x cliphist 2>/dev/null || true
+rm -f "${XDG_STATE_HOME:-$HOME/.local/state}/river-classic/clipboard-store.pid" 2>/dev/null || true
 pkill -x CopyQ 2>/dev/null || true
 
 # Second pass: an input grab must never survive into GDM/GNOME.  TERM is enough
