@@ -170,6 +170,7 @@ protocol (`view_tags`/`focused_tags`) to switch `border-width` between 0 and
 | `Super+Return` | terminal (Ptyxis, always a new window) |
 | `Super+Shift+Return` | terminal (foot) |
 | `Super+P` / `Alt+P` | launcher (fuzzel) · `Alt+I` = Brave · `Alt+Z` = ZCode |
+| `Super+N` | notification center (dunst history) · bell in the bar opens it too |
 | `Super+V` / `Alt+V` | clipboard popup (fuzzel + cliphist: text and images, fuzzy search) · `Super+Shift+V` full CopyQ manager |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
@@ -193,6 +194,32 @@ machines), linked to `~/.config/kanata/kanata.kbd`; `init` starts kanata when it
 is installed. It reads the keyboard directly, so the keyboard half of the udev
 rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 `lctl`+`spc`+`esc`.
+
+### Notifications
+
+dunst shows popups (5-10 s) and keeps the last 20 in an in-memory
+history. `Super+N` (or clicking the bell in the bar) opens the
+**notification center** (`config/river/notify-center.py`, GTK4, floated
+like the clipboard picker): every notification with app icon, bold
+summary, full wrapped body and a "app · time ago" line, newest first.
+Per-row ✕ dismisses (`dunstctl history-rm`), **Clear all** wipes the
+history, and the **DND** button toggles Do-Not-Disturb.
+
+**Notifications appear ~1 s after they are sent, even while their popup
+is still showing.** dunst only moves a notification into its history
+when the popup closes (~5-10 s), so history alone always lags; the
+center therefore eavesdrops on the D-Bus `Notify` call itself
+(`dbus-monitor`, spawned with the window and killed with it) and merges
+those live entries with the history (deduped when the history copy
+lands). A 3 s poll remains as a safety net, and the window also
+refreshes when re-focused. It stays open when new popups appear (the
+close-on-focus-loss is debounced for exactly that), and Esc closes it.
+
+The waybar bell shows `history + displayed` at all times (1 s refresh);
+left-click opens the center, middle-click toggles DND, right-click
+opens dunst's context menu. Limitations (dunst's, not ours): history
+caps at 20 entries and clears on logout/reboot - a file-backed log can
+be added later if that ever matters.
 
 ### Clipboard
 

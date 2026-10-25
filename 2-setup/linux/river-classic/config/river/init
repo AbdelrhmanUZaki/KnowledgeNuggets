@@ -79,9 +79,11 @@ map_us() {
 
 # ---- launcher / terminal -----------------------------------------------------
 # The clipboard picker floats above the tiling (it is a GTK4 window, not a
-# layer-shell client like fuzzel).
+# layer-shell client like fuzzel); so does the notification center.
 riverctl rule-add -app-id org.riverclassic.Clippick float
+riverctl rule-add -app-id org.riverclassic.NotifyCenter float
 map_us normal Super P spawn fuzzel
+map_us normal Super N spawn "$HOME/.config/river/notify-center.sh"   # notification center (dunst history)
 map_us normal Super V spawn "$HOME/.config/river/clipboard-pick.sh"   # clipboard popup (fuzzel over cliphist: text+images, fuzzy search)
 map_us normal Super+Shift V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # full CopyQ window
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal

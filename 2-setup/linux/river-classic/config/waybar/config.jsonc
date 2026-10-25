@@ -128,8 +128,9 @@
     "custom/notify": {
         "return-type": "json",
         "exec": "$HOME/.config/waybar/notify.sh",
-        "interval": 5,
-        "on-click": "dunstctl set-paused toggle",
+        "interval": 1,
+        "on-click": "setsid -f $HOME/.config/river/notify-center.sh",
+        "on-click-middle": "dunstctl set-paused toggle",
         "on-click-right": "dunstctl context"
     },
 
