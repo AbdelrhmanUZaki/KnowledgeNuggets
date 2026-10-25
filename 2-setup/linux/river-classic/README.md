@@ -167,7 +167,6 @@ protocol (`view_tags`/`focused_tags`) to switch `border-width` between 0 and
 | `Alt+Shift+1..9` or `Super+Shift+1..9` | **move the focused window to that tag** · `Shift+0` = on every tag |
 | `Alt+Ctrl+n` | also show tag n (multi-view) |
 | `Alt+Tab` | toggle current ↔ previous tag set (dwm `view(0)`) |
-| `Alt+T` | new tab in Brave |
 | `Super+Return` / `Super+Shift+Return` | terminal (foot) |
 | `Super+P` / `Alt+P` | launcher (fuzzel) · `Alt+I` = Brave |
 | `Super+V` / `Alt+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
