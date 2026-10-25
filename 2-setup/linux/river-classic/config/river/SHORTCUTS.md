@@ -43,8 +43,9 @@ Tags are on **Alt**, matching the old dwm setup.
 | Keys | Action |
 |---|---|
 | `Super+P` / `Alt+P` | app launcher (fuzzel) |
-| `Super+Return` / `Alt+T` | terminal (foot) |
+| `Super+Return` | terminal (foot) |
 | `Alt+I` | Brave browser |
+| `Alt+T` | new tab in Brave |
 | `Super+Shift+Return` | terminal (foot, dwm-style) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |

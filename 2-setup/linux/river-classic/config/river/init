@@ -80,7 +80,7 @@ map_us() {
 # ---- launcher / terminal -----------------------------------------------------
 map_us normal Super P spawn fuzzel
 map_us normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
-map_us normal Alt T spawn foot              # requested Alt+T terminal
+map_us normal Alt T spawn "brave-browser about:blank"   # new Brave tab
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
 # ---- help / lock --------------------------------------------------------------
