@@ -6,10 +6,12 @@
 #
 # Use Super+Shift+V for the full CopyQ window (images, pins, editing, tabs).
 #
-# ONE copyq round-trip: the eval hides the main window a fresh server start
-# restores, then opens the menu.  --start-server self-heals a dead server
-# (the CopyQ server has been observed to exit silently in this session);
-# that cold path costs a second or two, the warm path ~0.15 s.
+# Warm path (server up): one round-trip, ~0.2 s, popup only.
+# Cold path (the server dies silently now and then): a fresh start restores
+# the main window LATE (well after the server answers), so hiding it before
+# the menu races and loses.  Instead: open the menu first (instant), then
+# hide the window server-side after it settles - sleep()/hide() run while
+# the popup is already up; this client just lingers a little longer.
 # RIVER_CLIPBOARD_ITEMS overrides the number of entries shown (default 12).
 set -u
 
@@ -23,4 +25,18 @@ fi
 
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
 
-exec "$COPYQ" --start-server eval "if (visible()) hide(); menu(\"&clipboard\", $COUNT)"
+if ! "$COPYQ" count >/dev/null 2>&1; then
+    setsid -f "$COPYQ" --start-server >/dev/null 2>&1
+    i=0
+    until "$COPYQ" count >/dev/null 2>&1; do
+        i=$((i + 1))
+        [ "$i" -ge 40 ] && exit 0
+        sleep 0.25
+    done
+    # Menu first, then keep hiding the restored window as it shows up:
+    # repeat hides every ~300 ms for the first ~1.8 s (each is a no-op when
+    # the window is already hidden) so the flash is a brief flicker at most.
+    exec "$COPYQ" eval "menu(\"&clipboard\", $COUNT); hide(); sleep(300); hide(); sleep(300); hide(); sleep(400); hide(); sleep(500); hide(); sleep(300); hide()"
+fi
+
+exec "$COPYQ" eval "menu(\"&clipboard\", $COUNT)"
