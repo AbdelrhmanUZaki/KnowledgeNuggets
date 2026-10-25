@@ -78,7 +78,12 @@ row:selected label {{ color: {FG_BRIGHT}; }}
 label {{ color: {FG}; }}
 .preview-meta {{ color: {FG_DIM}; font-size: 13px; }}
 .preview-hint {{ color: {ACCENT}; font-size: 12px; }}
-.preview-text {{ color: {FG}; font-size: 14px; }}
+textview, textview text {{ background-color: transparent; }}
+.preview-text, .preview-text text {{
+    color: {FG};
+    font-size: 14px;
+    font-family: monospace;
+}}
 """
 
 def is_image(line: str) -> bool:
@@ -112,10 +117,20 @@ def decode(line: str) -> bytes:
 
 
 def png_bytes(data: bytes, box=None) -> bytes:
-    """Decode image data and re-encode, downscaled to fit `box` (w, h)."""
+    """Decode image data and re-encode, scaled to FIT `box` (w, h).
+
+    Unlike PIL's thumbnail() this also UPSCALES small images - Gtk.Image
+    renders textures at native size and would show a small source image
+    tiny no matter how big the preview pane is.
+    """
     img = Image.open(io.BytesIO(data))
-    if box:
-        img.thumbnail(box)
+    if box and img.width and img.height:
+        ratio = min(box[0] / img.width, box[1] / img.height)
+        if abs(ratio - 1.0) > 0.01:
+            img = img.resize(
+                (max(1, round(img.width * ratio)), max(1, round(img.height * ratio))),
+                Image.Resampling.LANCZOS,
+            )
     buf = io.BytesIO()
     img.save(buf, "PNG")
     return buf.getvalue()
@@ -298,16 +313,39 @@ class Picker(Gtk.Application):
                 daemon=True,
             ).start()
         else:
-            text = Gtk.Label(label=line.split("\t", 1)[-1])
-            text.add_css_class("preview-text")
-            text.set_wrap(True)
-            text.set_valign(Gtk.Align.START)
-            text.set_halign(Gtk.Align.START)
-            text.set_selectable(True)
+            # Full decoded text (cliphist list lines only carry the FIRST
+            # line - decode returns the whole entry) in a read-only
+            # TextView: labels inside ScrolledWindows refuse to wrap, a
+            # TextView wraps, scrolls and stays selectable.
+            view = Gtk.TextView()
+            view.add_css_class("preview-text")
+            view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+            view.set_editable(False)
+            view.set_cursor_visible(False)
+            view.set_vexpand(True)
             scroll = Gtk.ScrolledWindow()
-            scroll.set_child(text)
+            scroll.set_child(view)
             scroll.set_vexpand(True)
             self.preview_area.append(scroll)
+            threading.Thread(
+                target=self.text_preview_worker, args=(view, meta, line), daemon=True
+            ).start()
+
+    def text_preview_worker(self, view, meta, line):
+        """Fetch the full entry text off-thread and fill the TextView."""
+        try:
+            text = decode(line).decode("utf-8", "replace")
+            nl = text.count("\n") + 1
+            stats = f"{len(text)} chars · {nl} line{'s' if nl > 1 else ''}"
+
+            def fill():
+                view.get_buffer().set_text(text)
+                meta.set_label(f"{stats} · {row_label(line)}")
+                return False
+
+            GLib.idle_add(fill)
+        except Exception as e:
+            self.log_error("text-preview", e)
 
     def toggle_zoom(self, line):
         self.zoom_full[line] = not self.zoom_full.get(line, False)
