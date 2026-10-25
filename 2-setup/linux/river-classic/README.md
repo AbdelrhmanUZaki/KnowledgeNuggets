@@ -211,17 +211,16 @@ the panel's clipboard button opens the same window.
 
 The popup is produced by `config/river/clipboard-menu.sh`: one CopyQ
 round-trip (~0.2 s warm path). If the server died (it does, silently),
-the wrapper restarts it first — and because a fresh start restores the
-main window *late* (after the server answers, which beat every
-hide-before-the-menu attempt), the eval opens the menu immediately and
-then re-hides the window every ~300 ms while the server settles, so the
-worst case is a brief flicker, not a window.
+the wrapper restarts it headless first — **a bare `copyq --start-server`
+launches the app with its window visible** (that was the "popup also
+shows the CopyQ window" bug, and the window at login), so every start
+uses `--start-server count`, which runs the same server with no window.
 
 `config/river/copyq-keepalive.sh` (started from init, killed by
-session-cleanup) probes the server every 15 s and restarts it **hidden**
-if it died again — cold starts are now rare and short instead of
-"until the next Super+V". To start the server by hand in the background
-(no window), run: `setsid -f ~/.local/bin/copyq --start-server`.
+session-cleanup) probes the server every 15 s and restarts it headless
+if it died again, so cold starts are rare and short instead of "until
+the next Super+V". To start the server by hand in the background (no
+window), run: `setsid -f ~/.local/bin/copyq --start-server count`.
 CLI speed itself comes from running CopyQ from the **extracted AppDir**
 (`~/.local/opt/copyq-17.0.0`, created by `install-copyq17.sh`): every
 AppImage launch pays a FUSE mount (~0.5 s), the extracted binary starts in

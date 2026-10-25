@@ -7,11 +7,10 @@
 # Use Super+Shift+V for the full CopyQ window (images, pins, editing, tabs).
 #
 # Warm path (server up): one round-trip, ~0.2 s, popup only.
-# Cold path (the server dies silently now and then): a fresh start restores
-# the main window LATE (well after the server answers), so hiding it before
-# the menu races and loses.  Instead: open the menu first (instant), then
-# hide the window server-side after it settles - sleep()/hide() run while
-# the popup is already up; this client just lingers a little longer.
+# Cold path (the server dies silently now and then): restart it WITHOUT a
+# window - a bare `--start-server` (no command) launches the app with its
+# main window visible, which is how the "popup also shows the CopyQ window"
+# bug happened; `--start-server count` starts the same server headless.
 # RIVER_CLIPBOARD_ITEMS overrides the number of entries shown (default 12).
 set -u
 
@@ -26,17 +25,13 @@ fi
 export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-wayland}"
 
 if ! "$COPYQ" count >/dev/null 2>&1; then
-    setsid -f "$COPYQ" --start-server >/dev/null 2>&1
+    setsid -f "$COPYQ" --start-server count >/dev/null 2>&1
     i=0
     until "$COPYQ" count >/dev/null 2>&1; do
         i=$((i + 1))
         [ "$i" -ge 40 ] && exit 0
         sleep 0.25
     done
-    # Menu first, then keep hiding the restored window as it shows up:
-    # repeat hides every ~300 ms for the first ~1.8 s (each is a no-op when
-    # the window is already hidden) so the flash is a brief flicker at most.
-    exec "$COPYQ" eval "menu(\"&clipboard\", $COUNT); hide(); sleep(300); hide(); sleep(300); hide(); sleep(400); hide(); sleep(500); hide(); sleep(300); hide()"
 fi
 
 exec "$COPYQ" eval "menu(\"&clipboard\", $COUNT)"

@@ -1,15 +1,15 @@
 #!/bin/sh
-# Keep the CopyQ server alive in the background.
+# Keep the CopyQ server alive in the background - HIDDEN.
 #
 # Why: the CopyQ server has been observed to exit silently mid-session (no
-# crash log, no OOM).  Without this loop, only the next Super+V restarts it -
-# a "cold" popup: slower, and a fresh server restores its main window late
-# (clipboard-menu.sh hides it, but at best a flicker).  With the keepalive,
-# the server is back within ~15 s of dying and the popup stays warm.
+# crash log, no OOM).  Without this loop, only the next Super+V restarts it
+# (a "cold" popup).  With the keepalive, the server is back within ~15 s of
+# dying and the popup stays warm.
 #
-# The server starts HIDDEN (no window).  A fresh start restores the main
-# window late, so after every restart the window is hidden repeatedly while
-# the server settles (same trick clipboard-menu.sh uses).
+# IMPORTANT: a bare `copyq --start-server` (no command) LAUNCHES THE APP WITH
+# ITS MAIN WINDOW VISIBLE - restarting that way made the window pop up every
+# keepalive cycle.  `--start-server count` starts the exact same server
+# headless (count is a no-op that prints the item count).
 #
 # Idempotent: exits if another instance already runs.  Started from init,
 # killed by session-cleanup.sh; PID file in $STATE_DIR.
@@ -37,17 +37,15 @@ trap 'rm -f "$PIDFILE"; exit 0' TERM INT HUP
 probe() { "$COPYQ" count >/dev/null 2>&1; }
 
 restart_server() {
-    setsid -f "$COPYQ" --start-server >/dev/null 2>&1
+    # count = headless start; a bare --start-server would show the window.
+    setsid -f "$COPYQ" --start-server count >/dev/null 2>&1
     i=0
     until probe; do
         i=$((i + 1))
         [ "$i" -ge 40 ] && return 1
         sleep 0.25
     done
-    # A fresh start restores the main window late; keep hiding it while the
-    # server settles (each hide is a no-op when already hidden).
-    "$COPYQ" eval "hide(); sleep(300); hide(); sleep(300); hide(); sleep(400); hide(); sleep(500); hide(); sleep(300); hide()" >/dev/null 2>&1
-    echo "$(date '+%F %T') keepalive: restarted CopyQ server"
+    echo "$(date '+%F %T') keepalive: restarted CopyQ server (headless)"
 }
 
 while :; do

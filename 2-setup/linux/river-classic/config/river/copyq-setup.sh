@@ -25,7 +25,10 @@ until "$COPYQ" config autostart false >/dev/null 2>&1; do
         echo "copyq-setup: server did not start" >&2
         exit 0
     fi
-    "$COPYQ" --start-server >/dev/null 2>&1
+    # Bare `--start-server` (no command) LAUNCHES THE APP WITH ITS WINDOW
+    # VISIBLE - that is how a CopyQ window appeared at login.  `count` is a
+    # no-op command that starts the exact same server headless.
+    "$COPYQ" --start-server count >/dev/null 2>&1
     sleep 0.25
 done
 
