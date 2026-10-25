@@ -103,9 +103,10 @@ map_us normal Super+Shift J swap next          # Mod+Shift+j (push)
 map_us normal Super+Shift K swap previous
 
 # dwm's Mod+Return opens a terminal; zoom moved to Super+Z.
-riverctl map normal Super Return spawn foot
+riverctl map normal Super Return spawn xdg-terminal-exec   # default terminal (Ptyxis)
 map_us normal Super Z zoom
 map_us normal Alt I spawn brave-browser
+map_us normal Alt Z spawn zcode
 
 # master/stack sizing, exactly like dwm
 # master ratio on bare H/L, exactly like dwm (Ctrl+H/L kept as aliases)

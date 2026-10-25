@@ -43,9 +43,10 @@ Tags are on **Alt**, matching the old dwm setup.
 | Keys | Action |
 |---|---|
 | `Super+P` / `Alt+P` | app launcher (fuzzel) |
-| `Super+Return` | terminal (foot) |
+| `Super+Return` | terminal (default app, Ptyxis) |
 | `Alt+I` | Brave browser |
-| `Super+Shift+Return` | terminal (foot, dwm-style) |
+| `Alt+Z` | ZCode |
+| `Super+Shift+Return` | terminal (foot) |
 | `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |
 | `Alt+Escape` / `Super+Escape` / `Super+Alt+L` | lock the session |
