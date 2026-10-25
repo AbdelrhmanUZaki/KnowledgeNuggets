@@ -43,7 +43,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | Keys | Action |
 |---|---|
 | `Super+P` / `Alt+P` | app launcher (fuzzel) |
-| `Super+Return` | terminal (default app, Ptyxis) |
+| `Super+Return` | terminal (Ptyxis) |
 | `Alt+I` | Brave browser |
 | `Alt+Z` | ZCode |
 | `Super+Shift+Return` | terminal (foot) |
