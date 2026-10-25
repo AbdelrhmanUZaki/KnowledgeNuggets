@@ -198,13 +198,16 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 
 `Super+V` (or `Alt+V`) opens the **clipboard picker** over the **cliphist**
 history — text **and images**, searched, newest first. It is a small GTK4
-window (`config/river/clipboard-preview.py`, floated by a river rule):
-text entries show their first line, **image entries show a real
-thumbnail** (decoded and downscaled off-thread with PIL); type to filter,
-Up/Down to move, Enter or click to copy and close, Esc (or clicking
-away) to dismiss. Pasting in the target app is `Ctrl+V` — Wayland
-compositors cannot inject the paste for us. Cold open is ~0.4 s (Python +
-GTK import); if GTK4 is ever unavailable, `clipboard-pick.sh` falls back
+window (`config/river/clipboard-preview.py`, floated by a river rule) with
+two panes: the left one lists entries (text as its first line, images with
+a thumbnail), the right one shows a **large preview of the selected
+entry** — the image itself, or the full text, wrapped. Type to filter,
+Up/Down to move (the preview follows), Enter or click to copy and close,
+Esc (or clicking away) to dismiss. Dark styling is forced
+(`gtk-application-prefer-dark-theme` + explicit CSS on every node).
+Pasting in the target app is `Ctrl+V` — Wayland compositors cannot inject
+the paste for us. Cold open is ~0.4 s (Python + GTK import); if GTK4 is
+ever unavailable, `clipboard-pick.sh` falls back
 to a plain fuzzel text picker.
 
 Why cliphist (replacing CopyQ as the daily driver): **no server, no
