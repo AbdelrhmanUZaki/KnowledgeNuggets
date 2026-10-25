@@ -79,7 +79,8 @@ map_us() {
 
 # ---- launcher / terminal -----------------------------------------------------
 map_us normal Super P spawn fuzzel
-map_us normal Super V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # CopyQ clipboard manager
+map_us normal Super V spawn "$HOME/.config/river/clipboard-menu.sh"   # clipboard popup (last 12, type to search)
+map_us normal Super+Shift V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"   # full CopyQ window
 riverctl map normal Super+Shift Return spawn foot # dwm-style terminal
 
 # ---- help / lock --------------------------------------------------------------
@@ -146,7 +147,8 @@ riverctl map normal Alt+Shift Period send-to-output next
 riverctl map normal Alt+Shift Comma send-to-output previous
 riverctl map normal Alt Escape spawn "$HOME/.config/river/lock-session.sh"
 map_us normal Alt P spawn fuzzel
-map_us normal Alt V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"
+map_us normal Alt V spawn "$HOME/.config/river/clipboard-menu.sh"
+map_us normal Alt+Shift V spawn "env QT_QPA_PLATFORM=wayland $HOME/.local/bin/copyq --start-server toggle"
 riverctl map normal Alt+Shift Print spawn "$HOME/.config/river/screenshot.sh"
 map_us normal Alt+Control+Shift H resize horizontal -100
 map_us normal Alt+Control+Shift L resize horizontal 100

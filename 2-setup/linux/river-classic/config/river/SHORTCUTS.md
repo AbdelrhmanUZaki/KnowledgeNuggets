@@ -47,7 +47,7 @@ Tags are on **Alt**, matching the old dwm setup.
 | `Alt+I` | Brave browser |
 | `Alt+Z` | ZCode |
 | `Super+Shift+Return` | terminal (foot) |
-| `Super+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
+| `Super+V` | clipboard popup (last 12, type to search) · `Super+Shift+V` full manager |
 | `Super+F1` or `Super+Shift+/` | show this cheat sheet |
 | `Alt+Escape` / `Super+Escape` / `Super+Alt+L` | lock the session |
 | `Super+Shift+E` | log out of river (returns to GDM) |

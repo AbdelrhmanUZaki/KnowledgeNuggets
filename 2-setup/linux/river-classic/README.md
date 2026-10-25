@@ -170,7 +170,7 @@ protocol (`view_tags`/`focused_tags`) to switch `border-width` between 0 and
 | `Super+Return` | terminal (Ptyxis, always a new window) |
 | `Super+Shift+Return` | terminal (foot) |
 | `Super+P` / `Alt+P` | launcher (fuzzel) · `Alt+I` = Brave · `Alt+Z` = ZCode |
-| `Super+V` / `Alt+V` | clipboard manager (CopyQ 17: text, images, search, pins) |
+| `Super+V` / `Alt+V` | clipboard popup (CopyQ 17: last 12, type to search) · `Super+Shift+V` full manager |
 | `Super+Space` | switch keyboard layout (US ↔ Arabic; `Caps` = Esc, `Menu` = Super) |
 | `Super+Shift+Space` / `Alt+Shift+Space` | toggle floating |
 | `Super+F` / `Alt+Shift+F` | toggle fullscreen |
@@ -196,14 +196,25 @@ rule is required (`sudo ./install.sh rules`). Emergency exit: hold
 
 ### Clipboard
 
-`Super+V` toggles the **CopyQ 17** window: searchable history (newest first),
-text, images, pinned items and tags. Select an item with Enter or double-click;
-CopyQ copies it, closes the window and returns focus to the previous app, where
-you paste with `Ctrl+V`. There is no tray icon and no notification; the panel's
-clipboard button opens the same window.
+`Super+V` (or `Alt+V`) opens the **clipboard popup**: CopyQ's compact item
+menu at the mouse cursor with the last 12 entries and type-to-search. Pick an
+item with the arrows/number keys/Enter (or click); CopyQ copies it, closes the
+popup and returns focus to the previous app, where you paste with `Ctrl+V`.
+CopyQ cannot inject the paste itself under river/Wayland (it cannot identify
+the target window), so `Ctrl+V` after selecting is the one extra keystroke.
 
-CopyQ is a Qt app using Qt's light default style, and river 0.3 has no
-per-window rules, so it opens as a normal tiled window rather than a popup.
+`Super+Shift+V` (or `Alt+Shift+V`) toggles the **full CopyQ 17** window:
+searchable history (newest first), text, images, pinned items and tags. Select
+an item with Enter or double-click; CopyQ copies it, closes the window and
+returns focus to the previous app. There is no tray icon and no notification;
+the panel's clipboard button opens the same window.
+
+The popup is produced by `config/river/clipboard-menu.sh` (CopyQ's scripting
+`menu("&clipboard", 12)`). The wrapper also restarts the server if it died -
+the CopyQ server has been observed to exit silently in this session - and
+hides the main window a fresh start restores before opening the menu.
+
+CopyQ is a Qt app using Qt's light default style. For the full window,
 `Super+Shift+Space` toggles floating if you prefer a separate window; the
 clipboard behavior is unaffected.
 
