@@ -582,7 +582,7 @@ def dispatch(mouse, action):
         brightness(action[1])
         log("brightness %s" % ("up" if action[1] > 0 else "down"))
     elif action[0] == "tap":
-        log("tap -> %s" % action[1])
+        log_ms("tap -> %s (phantom=%s)" % (action[1], PHANTOM["active"]))
         button = BTN_SIDE if action[1] == "back" else BTN_EXTRA
         mouse.click(button, 1)
         mouse.click(button, 0)
@@ -590,6 +590,15 @@ def dispatch(mouse, action):
 
 def log(msg):
     print("[%s] %s" % (time.strftime("%H:%M:%S"), msg), flush=True)
+
+
+def log_ms(msg):
+    """Millisecond log line - tap seams and emissions need the precision."""
+    print("[%s] %s" % (time.strftime("%H:%M:%S.%f")[:-3], msg), flush=True)
+
+
+# phantom-touch bookkeeping shared between the forwarder and dispatch()
+PHANTOM = {"active": False}
 
 
 def parent_alive(pid):
@@ -705,6 +714,7 @@ def run(parent=None, gestures_only=False):
         active_btn = None
         last_parent_check = 0.0
         phantom_slot = None
+        last_input_t = 0.0        # monotonic of the last chunk read from the pad
 
         while not stopping["now"]:
             ready, _, _ = select.select([fd], [], [], 0.5)
@@ -722,6 +732,13 @@ def run(parent=None, gestures_only=False):
             except OSError as exc:
                 log("touchpad read failed: %s" % exc)
                 break
+            now_m = time.monotonic()
+            if last_input_t and now_m - last_input_t >= 0.25:
+                # did the KERNEL starve us? distinguishes hardware/controller
+                # stalls from anything inside the daemon (it logs before it
+                # forwards anything)
+                log_ms("pad was silent %.2f s" % (now_m - last_input_t))
+            last_input_t = now_m
             if not data:
                 break
 
@@ -772,9 +789,13 @@ def run(parent=None, gestures_only=False):
                     x = int(engine._avg_x()) if engine._coords() else x_range // 2
                     y = int(engine._avg_y()) if engine._coords() else y_range // 2
                     out += phantom_down(phantom_slot, x, y, sec, usec)
+                    PHANTOM["active"] = True
+                    log_ms("phantom in (slot %d)" % phantom_slot)
                 elif phantom_slot is not None and engine.finger_count() == 0:
                     out += phantom_up(phantom_slot, sec, usec)
                     phantom_slot = None
+                    PHANTOM["active"] = False
+                    log_ms("phantom out")
             if out is not None and clone is not None:
                 try:
                     clone.write(out)
