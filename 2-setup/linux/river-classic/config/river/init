@@ -39,7 +39,11 @@ fi
 # publish session env to dbus + user systemd, so dbus-activated services (portals!)
 # don't die of activation timeouts under non-GNOME compositors (GNOME does this for
 # you; river-classic doesn't!)
-dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null
+# DISPLAY: river itself exports the Xwayland display (patched Server.zig) — publish
+# it too, or dbus-activated X11 apps (OnlyOffice, ZCode snapshots, ...) miss it.
+user_env_names="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE"
+[ -n "$DISPLAY" ] && user_env_names="$user_env_names DISPLAY"
+dbus-update-activation-environment --systemd $user_env_names 2>/dev/null
 
 # A fast river logout leaves the user-manager's portal chain half-dead:
 # xdg-desktop-portal-gtk can be restarted by dbus *while* river is already
@@ -357,7 +361,10 @@ riverctl input '*Touchpad' scroll-factor 0.3
 # river does not start graphical-session.target, so the user manager needs the
 # display environment imported explicitly — otherwise (WantedBy=
 # graphical-session.target) units would start environment-blind.
-systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null || true
+# DISPLAY included when river published one (see top of this file).
+user_mgr_env_names="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE"
+[ -n "$DISPLAY" ] && user_mgr_env_names="$user_mgr_env_names DISPLAY"
+systemctl --user import-environment $user_mgr_env_names 2>/dev/null || true
 
 # ---- defaults ------------------------------------------------------------------
 riverctl set-repeat 50 300
