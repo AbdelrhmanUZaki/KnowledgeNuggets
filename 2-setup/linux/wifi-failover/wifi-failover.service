@@ -1,0 +1,12 @@
+[Unit]
+Description=WiFi failover: switch to hotspot when router internet is down
+After=NetworkManager.service
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/wifi-failover.sh
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=default.target
